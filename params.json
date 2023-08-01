@@ -1,0 +1,25 @@
+{
+    "icesat_csv": "ICESAT/nzealand/taranaki.csv",
+    "features-path": "ICESAT/nzealand/rf_features",
+    "interp": {
+        "resolution": 100,
+        "laplace": {
+            "outfile": "ICESAT/nzealand/rf_features/taranaki_laplace.tif"
+        },
+        "nni": {
+            "outfile": "ICESAT/nzealand/rf_features/taranaki_nni.tif"
+        },
+        "tin": {
+            "outfile": "ICESAT/nzealand/rf_features/taranaki_tin.tif"
+        },
+        "idw": {
+            "outfile": "ICESAT/nzealand/rf_features/taranaki_idw.tif",
+            "power": 2,
+            "n_neighbours": 10
+        }
+    },
+    "save-model": "ICESAT/nzealand/taranaki_model.joblib",
+    "results": {
+        "outfile": "ICESAT/nzealand/results/taranaki_pred.tif"
+    }
+}
