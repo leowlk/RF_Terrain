@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 def main():
     try:
-        jparams = json.load(open("params_gc.json"))
+        jparams = json.load(open("params_nl.json"))
     except:
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
@@ -47,8 +47,8 @@ def main():
         lon, lat = pyproj.transform(src_proj, dst_proj, x, y)
         return lon, lat
 
-# ----- [1] Interpolation of ICESAT-2 Points -> save as features ----- #
-    interp_pipeline = ['laplace']  # 'laplace','idw','tin','nni'
+    # ----- [1] Interpolation of ICESAT-2 Points -> save as features ----- #
+    interp_pipeline = ["laplace"]  # 'laplace','idw','tin','nni'
     icepts_NP = icepts_LLH.to_numpy()  # Convert pts from pandas to numpy
 
     for interp_method in interp_pipeline:
@@ -64,22 +64,22 @@ def main():
             n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
             interpolation.idw_interp(icepts_NP, res, interp_outtif, power, n_neighbours)
 
-# ----- [2] Gather GEE features ----- #
+    # ----- [2] Gather GEE features ----- #
     def change_projection():
         pass
         # proj = pyproj.Transformer.from_crs(crs_origin, crs, always_xy=True)
         # xmin, ymin = proj.transform(xmin_ori,ymin_ori)
         # xmax, ymax = proj.transform(xmax_ori,ymax_ori)
 
-# ----- [3] Prep features data ----- #
+    # ----- [3] Prep features data ----- #
     grid = Interp(icepts_NP, res=100)
     grid = grid.make_grid(icepts_NP)
 
     icepts_LL = icepts_LLH[["lat", "lon"]]
     gridpts_LL = pd.DataFrame(grid, columns=["lat", "lon"])
 
-    icepts_RF = icepts_LL.copy()  # Icepoints Lat-Lon
-    gridpts_RF = gridpts_LL.copy()  # Gridpoints Lat-Lon
+    icepts_RF = pd.DataFrame()  # Icepoints Lat-Lon
+    gridpts_RF = pd.DataFrame()  # Gridpoints Lat-Lon
 
     features = random_forest.get_features_path(jparams["features-path"])
 
@@ -91,12 +91,13 @@ def main():
             sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, icepts_LL)
             oneHotEncoded_df = random_forest.oneHotEncoding(sampled_df, feat_label)
             icepts_RF = pd.concat([icepts_RF, oneHotEncoded_df], axis=1)
-
         else:
             # normalisation of feture data
             sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, icepts_LL)
+            nsampled_df = sampled_df.drop(columns=["lon", "lat"])
             # normalised_df = random_forest.normaliseScaling(sampled_df, feat_label)
-            icepts_RF = pd.concat([icepts_RF, sampled_df], axis=1)
+            icepts_RF = pd.concat([icepts_RF, nsampled_df], axis=1)
+    icepts_RF = pd.concat([icepts_LLH, icepts_RF], axis=1)  # Lat Lon H
 
     # One Hot / Normalise Encoding for GRIDPTS
     for feat_label, feat_path in zip(features.keys(), features.values()):
@@ -106,31 +107,31 @@ def main():
             sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, gridpts_LL)
             oneHotEncoded_df = random_forest.oneHotEncoding(sampled_df, feat_label)
             gridpts_RF = pd.concat([gridpts_RF, oneHotEncoded_df], axis=1)
-
         else:
             # normalisation of feture data
             sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, gridpts_LL)
+            nsampled_df = sampled_df.drop(columns=["lon", "lat"])
             # normalised_df = random_forest.normaliseScaling(sampled_df, feat_label)
-            
-            gridpts_RF = pd.concat([gridpts_RF, sampled_df], axis=1)
+            gridpts_RF = pd.concat([gridpts_RF, nsampled_df], axis=1)
+    gridpts_RF = pd.concat([gridpts_LL, gridpts_RF], axis=1)
 
-    # Distance to points
+    # # Distance to points
     distance_to_ice = random_forest.dist_to_pts(icepts_LL, icepts_LL)
     distance_to_grid = random_forest.dist_to_pts(icepts_LL, gridpts_LL)
-    
-    # Normalise Interp_h column and concat into gridpts_RF
-    interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
-    icepts_RF = pd.concat([icepts_RF, interp_h, distance_to_ice], axis=1)
-    gridpts_RF = pd.concat([icepts_RF, interp_h, distance_to_grid], axis=1)
 
+    # # Normalise Interp_h column and concat into gridpts_RF
+    # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
+    icepts_RF = pd.concat([icepts_RF, distance_to_ice], axis=1)
+    gridpts_RF = pd.concat([gridpts_RF, distance_to_grid], axis=1)
 
-# ----- [4] Random Forest Mahcine Learning ----- #
-    results_tif = jparams['results']['outfile']
-    random_forest.regression(icepts_RF, gridpts_RF, mode="sklearn", outname=results_tif) # mode: "ranger", "sklearn"
+    # ----- [4] Random Forest Mahcine Learning ----- #
+    results_tif = jparams["results"]["outfile"]
+    random_forest.regression(
+        icepts_RF, gridpts_RF, mode="sklearn", outname=results_tif
+    )  # mode: "ranger", "sklearn"
 
 
 # ----- [3] Prep features data ----- #
-
 
 # features = []
 # isatgid = random_forest.make_grid(icepts_NP, res=0.0009166)

@@ -30,15 +30,6 @@ from sklearn.inspection import permutation_importance
 import os, sys
 
 
-class Feature:
-    def __init__(self, icepts, gridpts) -> None:
-        self.icepts = icepts
-        self.gridpts = gridpts
-
-    def one_hot_feature(self):
-        pass
-
-
 def get_features_path(directory):
     tif_files = {}
     for filename in os.listdir(directory):
@@ -126,21 +117,17 @@ class Distances:
         x, y = transformer.transform(lon, lat)
         return x, y
 
-    def dist_to_icepts(self, pts='icepts'):
+    def dist_to(self, pts="icepts"):
         knn = NearestNeighbors(n_neighbors=100, algorithm="ball_tree").fit(self.icepts)
-        if pts == 'icepts':
+        if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
-        else:
+        elif pts == "gridpts":
             d, i = knn.kneighbors(self.gridpts)
+        else:
+            print("what points??")
         dist_df = pd.DataFrame(d)
         dist_df.columns = dist_df.columns.astype(str)
         return dist_df
-        
-        # else:
-        #     d, i = knn.kneighbors(self.gridpts)
-        #     dist_df = pd.DataFrame(d)
-        #     dist_df.columns = dist_df.columns.astype(str)
-        #     return dist_df
 
 
 class Regression:
@@ -189,44 +176,45 @@ class Regression:
         print("Max error:", max_err)
         print("--------------------------")
 
-    def save(self, outname):
-        print(self.grid_raster.columns)
-        print(self.X_train.columns)
+        print(rf_model.feature_importances_)
+        print(rf_model.n_features_in_)
+        print(rf_model.feature_names_in_)
 
-        # pred_h = pd.DataFrame(self.grid_raster, columns=self.X_train.columns)
-        
-        # pred_h.dropna(axis=1, inplace=True)
-        
-        # rf_pred_target = self.rf_model.predict(pred_h)
-        # pred_h["pred_h"] = rf_pred_target        
-        # latlon_h = pred_h[["lat", "lon", "pred_h"]]
+        print(rf_model.decision_path(self.X_test))
 
-        # # export to Gtiff with 'lat' 'lon' and 'predicted h'
-        # xr_pred_h = xr.Dataset.from_dataframe(latlon_h.set_index(["lat", "lon"]))
-        # xr_pred_h.rio.set_crs("EPSG:4326")
-        # # xr_pred_h.rio.write_nodata(-9999)
-        # xr_pred_h.rio.set_spatial_dims(x_dim="lon", y_dim="lat")
-        # xr_pred_h.rio.to_raster(outname, driver="GTiff")
+    def output_tif(self, outname):
+        pred_h = pd.DataFrame(self.grid_raster, columns=self.X_train.columns)
+        pred_h.dropna(axis=1, inplace=True)
+
+        rf_pred_target = self.rf_model.predict(pred_h)
+        pred_h["pred_h"] = rf_pred_target
+        latlon_h = pred_h[["lat", "lon", "pred_h"]]
+
+        # export to Gtiff with 'lat' 'lon' and 'predicted h'
+        xr_pred_h = xr.Dataset.from_dataframe(latlon_h.set_index(["lat", "lon"]))
+        xr_pred_h.rio.set_crs("EPSG:4326")
+        # xr_pred_h.rio.write_nodata(-9999)
+        xr_pred_h.rio.set_spatial_dims(x_dim="lon", y_dim="lat")
+        xr_pred_h.rio.to_raster(outname, driver="GTiff")
 
 
 def dist_to_pts(icepts, gridpts):
     d = Distances(icepts, gridpts)
     if gridpts is icepts:
-        return d.dist_to_icepts()
+        return d.dist_to("icepts")
     else:
-        return d.dist_to_gridpts()
+        return d.dist_to("gridpts")
 
 
-def regression(iceDF, gridDF, mode="sklearn", outname='outname.tif'):
-    i = Regression(iceDF, gridDF)
-    X_train, X_test, y_train, y_test = i.test_train()
+def regression(iceDF, gridDF, mode="sklearn", outname="outname.tif"):
+    r = Regression(iceDF, gridDF)
     if mode == "sklearn":
-        i.sklearn_RFregression()
+        r.sklearn_RFregression()
     elif mode == "ranger":
-        i.ranger_RFregression()
-    i.save(outname)
-    
-    
+        r.ranger_RFregression()
+    r.output_tif(outname)
+    r.rf_evaluation()
+
 
 def _test():
     pass
