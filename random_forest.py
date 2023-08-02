@@ -24,7 +24,7 @@ from skranger.ensemble import RangerForestRegressor # Ranger
 import xgboost as xgb # XGBoost
 
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV, KFold
 from sklearn.metrics import mean_squared_error, r2_score, max_error, accuracy_score
 from sklearn.inspection import permutation_importance
 
@@ -144,7 +144,7 @@ class Regression:
         x = self.df.drop(columns=["h_te_interp"])
         y = self.df["h_te_interp"]  # Target
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            x, y, test_size=0.2, random_state = 42
+            x, y, test_size=0.2, random_state=42
         )
 
         # VarianceThreshold from sklearn provides a simple baseline approach to feature selection
@@ -176,37 +176,37 @@ class Regression:
     
     def sklearn_RFregression(self):
         self.test_train()
-        # # ----- Random Forest Regressor -----
-        sklearn_rf_model = RandomForestRegressor()
-        # sklearn_rf_model.fit(self.X_train, self.y_train)
-        # self.rf_evaluation(sklearn_rf_model)
-        # self.rf_model = sklearn_rf_model
+        # ----- Random Forest Regressor -----
+        sklearn_rf_model = RandomForestRegressor(n_jobs=-1)
+        sklearn_rf_model.fit(self.X_train, self.y_train)
+        self.rf_evaluation(sklearn_rf_model)
+        self.rf_model = sklearn_rf_model
         
-        # -------- Grid Search CV --------
-        search_space = {
-            "n_estimators" : [100, 200, 500],
-            "max_depth" : [10, 20, 30],
-            'min_samples_split': [2, 5, 10],
-            'min_samples_leaf': [1, 2, 4],
-            "n_jobs": [-1]
-            }
+        # # -------- Grid Search CV --------
+        # search_space = {
+        #     "n_estimators" : [100, 200, 500],
+        #     "max_depth" : [10, 20, 30],
+        #     'min_samples_split': [2, 5, 10],
+        #     'min_samples_leaf': [1, 2, 4],
+        #     "n_jobs": [-1]
+        #     }
         
-        # make a GridSearchCV object
-        GS = GridSearchCV(estimator = sklearn_rf_model,
-                          param_grid = search_space,
-                          # sklearn.metrics.SCORERS.keys()
-                          scoring = ["r2", "neg_root_mean_squared_error"], 
-                          refit = "r2",
-                          cv = 5,
-                          verbose = 4)
-        GS.fit(self.X_train, self.y_train)
-        print(GS.best_estimator_)
-        print(GS.best_params_)
-        print(GS.best_score_)
+        # # make a GridSearchCV object
+        # GS = GridSearchCV(estimator = sklearn_rf_model,
+        #                   param_grid = search_space,
+        #                   # sklearn.metrics.SCORERS.keys()
+        #                   scoring = ["r2", "neg_root_mean_squared_error"], 
+        #                   refit = "r2",
+        #                   cv = 5,
+        #                   verbose = 4)
+        # GS.fit(self.X_train, self.y_train)
+        # print(GS.best_estimator_)
+        # print(GS.best_params_)
+        # print(GS.best_score_)
     
     def ranger_RFregression(self):
         self.test_train()
-        # Ranger Regressor
+        # ----- Ranger Regressor -----
         ranger_rf_model = RangerForestRegressor(n_jobs=-1)
         # Fitting the Random Forest Regression model to the data
         ranger_rf_model.fit(self.X_train, self.y_train)
@@ -215,13 +215,14 @@ class Regression:
     
     def xgboost_RFregression(self):
         self.test_train()
-        # Ranger Regressor
+        # ----- XGBoost Regressor -----
         xgb_rf_model = xgb.XGBRegressor(n_jobs=-1)
         
         # [XGB] Fitting the RF Regression model to the data
         xgb_rf_model.fit(self.X_train, self.y_train)
         self.rf_evaluation(xgb_rf_model)
         self.rf_model = xgb_rf_model
+        return xgb_rf_model
 
 
     def rf_evaluation(self, rf_model):
@@ -237,13 +238,12 @@ class Regression:
         print("R-squared:", r2)
         print("Max error:", max_err)
         print("--------------------------")
+        
+        # if val_method == 'kfold'
 
         # print(rf_model.feature_importances_)
         # print(rf_model.n_features_in_)
         # print(rf_model.feature_names_in_)
-        
-    def hyperparam_tuning(self):
-        pass
 
     def output_tif(self, outname):
         pred_h = pd.DataFrame(self.grid_raster, columns=self.X_train.columns)
@@ -259,6 +259,23 @@ class Regression:
         # xr_pred_h.rio.write_nodata(-9999)
         xr_pred_h.rio.set_spatial_dims(x_dim="lon", y_dim="lat")
         xr_pred_h.rio.to_raster(outname, driver="GTiff")
+    
+    def cross_validation(self, rf_model, method='kfold'):
+        if method=='kfold':
+            scores=[]
+            kFold=KFold(n_splits=10,random_state=42,shuffle=False)
+            for train_index,test_index in kFold.split(X):
+                print("Train Index: ", train_index, "\n")
+                print("Test Index: ", test_index)
+                
+                X_train, X_test, y_train, y_test = X[train_index], X[test_index], y[train_index], y[test_index]
+                knn.fit(X_train, y_train)
+                scores.append(knn.score(X_test, y_test))
+                knn.fit(X_train, y_train)
+                scores.append(knn.score(X_test,y_test))
+                print(np.mean(scores))
+                0.9393939393939394
+                cross_val_score(knn, X, y, cv=10)
 
 
 def dist_to_pts(icepts, gridpts):
@@ -278,7 +295,9 @@ def regression(iceDF, gridDF, mode="xgboost", outname="outname.tif"):
     elif mode == "xgboost":
         r.xgboost_RFregression()
     r.output_tif(outname)
-    r.rf_evaluation()
+    
+    # r.rf_evaluation(Kfold)
+    
 
 
 def _test():

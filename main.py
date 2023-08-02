@@ -14,10 +14,9 @@ import multiprocessing, sys, csv, os
 
 import matplotlib.pyplot as plt
 
-
 def main():
     try:
-        jparams = json.load(open("params_nl.json"))
+        jparams = json.load(open("params_gc.json"))
     except:
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
@@ -131,7 +130,7 @@ def main():
     random_forest.regression(
         # mode: "ranger", "sklearn", "xgboost"
         icepts_RF, gridpts_RF, mode="sklearn", outname=results_tif+"_sklearn.tif"
-    )        
+    )      
 
 
 # ----- [3] Prep features data ----- #
