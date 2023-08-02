@@ -19,11 +19,12 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 # Random Forest Regressors
-from sklearn.ensemble import RandomForestRegressor
-from skranger.ensemble import RangerForestRegressor
+from sklearn.ensemble import RandomForestRegressor  # SKLearn
+from skranger.ensemble import RangerForestRegressor # Ranger
+import xgboost as xgb # XGBoost
 
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.metrics import mean_squared_error, r2_score, max_error, accuracy_score
 from sklearn.inspection import permutation_importance
 
@@ -134,33 +135,66 @@ class Regression:
     def __init__(self, pts_dataframe, pts_grid) -> None:
         self.df = pts_dataframe
         self.grid_raster = pts_grid
+        self.X_train = None
+        self.X_test = None 
+        self.y_train = None 
+        self.y_test = None
 
     def test_train(self):
         x = self.df.drop(columns=["h_te_interp"])
         y = self.df["h_te_interp"]  # Target
-
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            x, y, test_size=0.2
+            x, y, test_size=0.2, random_state = 42
         )
 
         # VarianceThreshold from sklearn provides a simple baseline approach to feature selection
         return self.X_train, self.X_test, self.y_train, self.y_test
 
     def sklearn_RFregression(self):
+        self.test_train()
+        
         # Random Forest Regressor
-        sklearn_rf_model = RandomForestRegressor(n_jobs=-1)
-        # Fitting the Random Forest Regression model to the data
+        sklearn_rf_model = RandomForestRegressor(random_state=42, n_jobs=-1)
         sklearn_rf_model.fit(self.X_train, self.y_train)
         self.rf_evaluation(sklearn_rf_model)
         self.rf_model = sklearn_rf_model
+        
+        # -------- Grid Search CV --------
+        # make a dictionary of hyperparameters
+        # param_grid = {
+        #     'n_estimators': [100, 200, 300],
+        #     'max_depth': [None, 10, 20, 30],
+        #     'min_samples_split': [2, 5, 10],
+        #     'min_samples_leaf': [1, 2, 4]
+        #     }
+        # grid_search = GridSearchCV(estimator=sklearn_rf_model, param_grid=param_grid, cv=5, n_jobs=-1)
+        # Fitting the Random Forest Regression model to the data
+        # grid_search.fit(self.X_train, self.y_train)
+        # best_rf_regressor = grid_search.best_estimator_
+        # best_params = grid_search.random_state = best_params_
+        # print(best_params)
+
+        
 
     def ranger_RFregression(self):
+        self.test_train()
         # Ranger Regressor
         ranger_rf_model = RangerForestRegressor(n_jobs=-1)
         # Fitting the Random Forest Regression model to the data
         ranger_rf_model.fit(self.X_train, self.y_train)
         self.rf_evaluation(ranger_rf_model)
         self.rf_model = ranger_rf_model
+    
+    def xgboost_RFregression(self):
+        self.test_train()
+        # Ranger Regressor
+        xgb_rf_model = xgb.XGBRegressor(n_jobs=-1)
+        
+        # [XGB] Fitting the RF Regression model to the data
+        xgb_rf_model.fit(self.X_train, self.y_train)
+        self.rf_evaluation(xgb_rf_model)
+        self.rf_model = xgb_rf_model
+
 
     def rf_evaluation(self, rf_model):
         # Use the model to make predictions on the testing data
@@ -176,11 +210,13 @@ class Regression:
         print("Max error:", max_err)
         print("--------------------------")
 
-        print(rf_model.feature_importances_)
-        print(rf_model.n_features_in_)
-        print(rf_model.feature_names_in_)
-
-        print(rf_model.decision_path(self.X_test))
+        # print(rf_model.feature_importances_)
+        # print(rf_model.n_features_in_)
+        # print(rf_model.feature_names_in_)
+        # print(rf_model.decision_path(self.X_test))
+        
+    def hyperparam_tuning(self):
+        pass
 
     def output_tif(self, outname):
         pred_h = pd.DataFrame(self.grid_raster, columns=self.X_train.columns)
@@ -206,12 +242,14 @@ def dist_to_pts(icepts, gridpts):
         return d.dist_to("gridpts")
 
 
-def regression(iceDF, gridDF, mode="sklearn", outname="outname.tif"):
+def regression(iceDF, gridDF, mode="xgboost", outname="outname.tif"):
     r = Regression(iceDF, gridDF)
     if mode == "sklearn":
         r.sklearn_RFregression()
     elif mode == "ranger":
         r.ranger_RFregression()
+    elif mode == "xgboost":
+        r.xgboost_RFregression()
     r.output_tif(outname)
     r.rf_evaluation()
 

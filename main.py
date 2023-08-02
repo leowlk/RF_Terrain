@@ -126,9 +126,21 @@ def main():
 
     # ----- [4] Random Forest Mahcine Learning ----- #
     results_tif = jparams["results"]["outfile"]
+    results_tif = results_tif.removesuffix(".tif")
+   
     random_forest.regression(
-        icepts_RF, gridpts_RF, mode="sklearn", outname=results_tif
-    )  # mode: "ranger", "sklearn"
+        # mode: "ranger", "sklearn", "xgboost"
+        icepts_RF, gridpts_RF, mode="sklearn", outname=results_tif+"_sklearn.tif"
+    )
+    random_forest.regression(
+        # mode: "ranger", "sklearn", "xgboost"
+        icepts_RF, gridpts_RF, mode="ranger", outname=results_tif+"_ranger.tif"
+    ) 
+    random_forest.regression(
+        # mode: "ranger", "sklearn", "xgboost"
+        icepts_RF, gridpts_RF, mode="xgboost", outname=results_tif+"_xgboost.tif"
+    )  
+        
 
 
 # ----- [3] Prep features data ----- #
