@@ -10,14 +10,13 @@ from interpolation import Interp
 import random_forest
 import pyproj
 import rasterio
-import multiprocessing, sys, csv, os
+import multiprocessing, sys, csv, os, time
 
 import matplotlib.pyplot as plt
 
-
 def main():
     try:
-        jparams = json.load(open("params_nl.json"))
+        jparams = json.load(open("params_nz.json"))
     except:
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
@@ -130,7 +129,7 @@ def main():
 
     models = {
         "nl": "ICESAT/zlimburg/results/zlimburg_pred_sklearn_model.joblib",
-        "nz": "ICESAT/nzealand/results/nzealand_pred_sklearn_model.joblib",
+        "nz": "ICESAT/nzealand/results/taranaki_pred_sklearn_model.joblib",
         "gc": "ICESAT/gcanyon/results/gcanyon_pred_sklearn_model.joblib",
     }
 
@@ -152,26 +151,24 @@ def main():
             "min_samples_split": 2,
             "n_estimators": 200,
             "n_jobs": -1,
-        },
-        
+        }, 
     }
 
-    random_forest.regression(
-        # mode: "ranger", "sklearn", "xgboost"
-        icepts_RF,
-        gridpts_RF,
-        mode="sklearn",
-        outname=results_tif + "_sklearnNL.tif",
-        save_rf_model=True,
-        params=optimal_params["nl"],
-    )
-
-    # random_forest.use_rf_model(
+    # random_forest.regression(
     #     icepts_RF,
     #     gridpts_RF,
-    #     use_model=models["nl"],
-    #     outname=results_tif + "_modelNL.tif",
+    #     mode="sklearn", # mode: "ranger", "sklearn", "xgboost"
+    #     outname = results_tif + "_sklearn.tif",
+    #     save_rf_model=False,
+    #     params=optimal_params["gc"],
     # )
+
+    random_forest.use_rf_model(
+        icepts_RF,
+        gridpts_RF,
+        use_model=models["nl"],
+        outname=results_tif + "_modelNL.tif",
+    )
 
 
 # ----- [3] Prep features data ----- #
@@ -182,4 +179,8 @@ def main():
 
 
 if __name__ == "__main__":
+    t0 = time.time()
     main()
+    t1 = time.time()
+    spent = t1 - t0
+    print(f"==> used {round(spent,2)} seconds")

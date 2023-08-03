@@ -156,13 +156,15 @@ class Regression:
 
     # VarianceThreshold from sklearn provides a simple baseline approach to feature selection
 
-    def sklearn_RFregression(self, use_model=None, params=None):
+    def sklearn_RFregression(self, use_model=None, params={}):
         self.test_train()
         # ----- Random Forest Regressor -----
-        # use model (if any) && use params (if any)
         if use_model == None:
             sklearn_rf_model = RandomForestRegressor(**params)
+            
+        # use model (if any) && use params (if any)
         else:
+            print("use model is present")
             sklearn_rf_model = joblib.load(use_model)
 
         sklearn_rf_model.fit(self.X_train, self.y_train)
@@ -222,9 +224,9 @@ class Regression:
         max_err = max_error(self.y_test, y_pred)
 
         print("--------[RF Tests]--------")
-        print("MSE:", mse)
-        print("R-squared:", r2)
-        print("Max error:", max_err)
+        print(f"MSE: {mse:2f}")
+        print(f"R-squared: {r2:4f}")
+        print(f"Max error: {max_err:4f}")
         print("--------------------------")
 
         # if val_method == 'kfold'
@@ -284,16 +286,16 @@ def regression(
     mode="sklearn",
     outname="outname.tif",
     save_rf_model=False,
-    *params,
-    **kwargs
+    params=None
 ):
     save_modelname = outname.removesuffix(".tif") + "_model.joblib"
+    
     r = Regression(iceDF, gridDF)
     if mode == "sklearn":
         r.sklearn_RFregression(params=params)
         # if save_model
         if save_rf_model == True:
-            r.save_rfmodel(save_modelname)
+            joblib.dump(r.rf_model, save_modelname)
 
     elif mode == "ranger":
         r.ranger_RFregression()
@@ -304,13 +306,18 @@ def regression(
         r.xgboost_RFregression()
         if save_rf_model == True:
             r.save_rfmodel(save_modelname)
-
+    else:
+        print("got nothing.")
+            
+    # Output the predicted height to TIF file 
     r.output_tif(outname)
 
 
 def use_rf_model(iceDF, gridDF, use_model=None, outname="outname.tif"):
     r = Regression(iceDF, gridDF)
     r.sklearn_RFregression(use_model=use_model)
+    
+    print("outputting...")
     r.output_tif(outname)
     
     # r.rf_evaluation(Kfold)
