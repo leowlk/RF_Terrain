@@ -174,10 +174,15 @@ class Regression:
     #     best_params = grid_search.random_state = best_params_
     #     print(best_params)
     
-    def sklearn_RFregression(self):
+    def sklearn_RFregression(self, use_model=None):
         self.test_train()
         # ----- Random Forest Regressor -----
-        sklearn_rf_model = RandomForestRegressor(n_jobs=-1)
+        if use_model == None:
+            nl_optimal_params = {'max_depth': 50, 'min_samples_split': 2, 'n_estimators': 500, 'n_jobs': -1}
+            sklearn_rf_model = RandomForestRegressor(**nl_optimal_params)
+        else:
+            sklearn_rf_model = joblib.load(use_model)
+        
         sklearn_rf_model.fit(self.X_train, self.y_train)
         self.rf_evaluation(sklearn_rf_model)
         self.rf_model = sklearn_rf_model
@@ -187,7 +192,6 @@ class Regression:
         #     "n_estimators" : [100, 200, 500],
         #     "max_depth" : [10, 20, 30],
         #     'min_samples_split': [2, 5, 10],
-        #     'min_samples_leaf': [1, 2, 4],
         #     "n_jobs": [-1]
         #     }
         
@@ -244,6 +248,10 @@ class Regression:
         # print(rf_model.feature_importances_)
         # print(rf_model.n_features_in_)
         # print(rf_model.feature_names_in_)
+        
+    def save_rfmodel(self, rf_modelname):
+        # save the model to disk
+        joblib.dump(self.rf_model, rf_modelname)
 
     def output_tif(self, outname):
         pred_h = pd.DataFrame(self.grid_raster, columns=self.X_train.columns)
@@ -260,22 +268,23 @@ class Regression:
         xr_pred_h.rio.set_spatial_dims(x_dim="lon", y_dim="lat")
         xr_pred_h.rio.to_raster(outname, driver="GTiff")
     
-    def cross_validation(self, rf_model, method='kfold'):
-        if method=='kfold':
-            scores=[]
-            kFold=KFold(n_splits=10,random_state=42,shuffle=False)
-            for train_index,test_index in kFold.split(X):
-                print("Train Index: ", train_index, "\n")
-                print("Test Index: ", test_index)
+    
+    # def cross_validation(self, rf_model, method='kfold'):
+    #     if method=='kfold':
+    #         scores=[]
+    #         kFold=KFold(n_splits=10,random_state=42,shuffle=False)
+    #         for train_index,test_index in kFold.split(X):
+    #             print("Train Index: ", train_index, "\n")
+    #             print("Test Index: ", test_index)
                 
-                X_train, X_test, y_train, y_test = X[train_index], X[test_index], y[train_index], y[test_index]
-                knn.fit(X_train, y_train)
-                scores.append(knn.score(X_test, y_test))
-                knn.fit(X_train, y_train)
-                scores.append(knn.score(X_test,y_test))
-                print(np.mean(scores))
-                0.9393939393939394
-                cross_val_score(knn, X, y, cv=10)
+    #             X_train, X_test, y_train, y_test = X[train_index], X[test_index], y[train_index], y[test_index]
+    #             knn.fit(X_train, y_train)
+    #             scores.append(knn.score(X_test, y_test))
+    #             knn.fit(X_train, y_train)
+    #             scores.append(knn.score(X_test,y_test))
+    #             print(np.mean(scores))
+    #             0.9393939393939394
+    #             cross_val_score(knn, X, y, cv=10)
 
 
 def dist_to_pts(icepts, gridpts):
@@ -286,18 +295,36 @@ def dist_to_pts(icepts, gridpts):
         return d.dist_to("gridpts")
 
 
-def regression(iceDF, gridDF, mode="xgboost", outname="outname.tif"):
+def regression(iceDF, gridDF, mode="xgboost", outname="outname.tif", save_rf_model=False, *args, **kwargs):
+    
+    use_model = {"nl": 'ICESAT/zlimburg/results/zlimburg_pred_sklearn_model.joblib',
+                "nz": 'ICESAT/zlimburg/results/nzealand_pred_sklearn_model.joblib',
+                "gc": 'ICESAT/zlimburg/results/gcanyon_pred_sklearn_model.joblib'}
+
+    save_modelname = outname.removesuffix(".tif") + "_model.joblib"
     r = Regression(iceDF, gridDF)
     if mode == "sklearn":
         r.sklearn_RFregression()
+        # if save_model
+        if save_rf_model == True:
+            r.save_rfmodel(save_modelname)
+
     elif mode == "ranger":
         r.ranger_RFregression()
+        if save_rf_model == True:
+            r.save_rfmodel(save_modelname)
+
     elif mode == "xgboost":
         r.xgboost_RFregression()
+        if save_rf_model == True:
+                r.save_rfmodel(save_modelname)
+                
+    elif mode == "use-sklearn-zlimurg":
+        r.sklearn_RFregression(use_model["nl"])
+
     r.output_tif(outname)
-    
+
     # r.rf_evaluation(Kfold)
-    
 
 
 def _test():
