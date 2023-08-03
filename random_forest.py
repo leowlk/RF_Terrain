@@ -152,32 +152,9 @@ class Regression:
             x, y, test_size=0.2, random_state=42
         )
 
-        # VarianceThreshold from sklearn provides a simple baseline approach to feature selection
         return self.X_train, self.X_test, self.y_train, self.y_test
 
-    # def sklearn_RFregression(self):
-    #     self.test_train()
-
-    #     # Random Forest Regressor
-    #     sklearn_rf_model = RandomForestRegressor(random_state=42, n_jobs=-1)
-    #     sklearn_rf_model.fit(self.X_train, self.y_train)
-    #     self.rf_evaluation(sklearn_rf_model)
-    #     self.rf_model = sklearn_rf_model
-
-    #     # -------- Grid Search CV --------
-    #     make a dictionary of hyperparameters
-    #     param_grid = {
-    #         'n_estimators': [100, 200, 300],
-    #         'max_depth': [None, 10, 20, 30],
-    #         'min_samples_split': [2, 5, 10],
-    #         'min_samples_leaf': [1, 2, 4]
-    #         }
-    #     grid_search = GridSearchCV(estimator=sklearn_rf_model, param_grid=param_grid, cv=5, n_jobs=-1)
-    #     Fitting the Random Forest Regression model to the data
-    #     grid_search.fit(self.X_train, self.y_train)
-    #     best_rf_regressor = grid_search.best_estimator_
-    #     best_params = grid_search.random_state = best_params_
-    #     print(best_params)
+    # VarianceThreshold from sklearn provides a simple baseline approach to feature selection
 
     def sklearn_RFregression(self, use_model=None, params=None):
         self.test_train()
@@ -193,26 +170,27 @@ class Regression:
         self.rf_model = sklearn_rf_model
         return sklearn_rf_model
 
-        # # -------- Grid Search CV --------
-        # search_space = {
-        #     "n_estimators" : [100, 200, 500],
-        #     "max_depth" : [10, 20, 30],
-        #     'min_samples_split': [2, 5, 10],
-        #     "n_jobfs": [-1]
-        #     }
+    # -------- Grid Search CV --------
+    def grid_search(self):
+        search_space = {
+            "n_estimators" : [100, 200, 500],
+            "max_depth" : [10, 20, 30],
+            'min_samples_split': [2, 5, 10],
+            "n_jobfs": [-1]
+            }
 
-        # # make a GridSearchCV object
-        # GS = GridSearchCV(estimator = sklearn_rf_model,
-        #                   param_grid = search_space,
-        #                   # sklearn.metrics.SCORERS.keys()
-        #                   scoring = ["r2", "neg_root_mean_squared_error"],
-        #                   refit = "r2",
-        #                   cv = 5,
-        #                   verbose = 4)
-        # GS.fit(self.X_train, self.y_train)
-        # print(GS.best_estimator_)
-        # print(GS.best_params_)
-        # print(GS.best_score_)
+        # make a GridSearchCV object
+        GS = GridSearchCV(estimator = self.rf_model,
+                          param_grid = search_space,
+                          # sklearn.metrics.SCORERS.keys()
+                          scoring = ["r2", "neg_root_mean_squared_error"],
+                          refit = "r2",
+                          cv = 5,
+                          verbose = 4)
+        GS.fit(self.X_train, self.y_train)
+        print(GS.best_estimator_)
+        print(GS.best_params_)
+        print(GS.best_score_)
 
     def ranger_RFregression(self):
         self.test_train()
@@ -334,7 +312,7 @@ def use_rf_model(iceDF, gridDF, use_model=None, outname="outname.tif"):
     r = Regression(iceDF, gridDF)
     r.sklearn_RFregression(use_model=use_model)
     r.output_tif(outname)
-
+    
     # r.rf_evaluation(Kfold)
 
 

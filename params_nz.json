@@ -4,16 +4,16 @@
     "interp": {
         "resolution": 100,
         "laplace": {
-            "outfile": "ICESAT/nzealand/rf_features/taranaki_laplace.tif"
+            "outfile": "ICESAT/nzealand/rf_features/interp_laplace.tif"
         },
         "nni": {
-            "outfile": "ICESAT/nzealand/rf_features/taranaki_nni.tif"
+            "outfile": "ICESAT/nzealand/rf_features/interp_nni.tif"
         },
         "tin": {
-            "outfile": "ICESAT/nzealand/rf_features/taranaki_tin.tif"
+            "outfile": "ICESAT/nzealand/rf_features/interp_tin.tif"
         },
         "idw": {
-            "outfile": "ICESAT/nzealand/rf_features/taranaki_idw.tif",
+            "outfile": "ICESAT/nzealand/rf_features/interp_idw.tif",
             "power": 2,
             "n_neighbours": 10
         }
