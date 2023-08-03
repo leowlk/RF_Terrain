@@ -12,6 +12,7 @@ from geopy.distance import geodesic
 import glob
 import sys
 
+
 class DownloadICESAT:
     def __init__(self, short_name="ATL08", date_range=["2015-01-01", "2023-07-01"]):
         self.short_name = short_name
@@ -35,12 +36,12 @@ class DownloadICESAT:
 
     def download(self, location, *args):
         mapping = {
-            "zlimburg": 'pass',
-            "nzealand": 'pass',
-            "gcanyon": 'pass',
+            "zlimburg": "pass",
+            "nzealand": "pass",
+            "gcanyon": "pass",
         }
         mapping[location](*args)
-        
+
     def earthdata_download(self, fpath, *args, **kwargs):
         earthdata_uid = "lkan03"
         email = "leo.kan01@gmail.com"
@@ -163,7 +164,7 @@ def _test():
     # t = DownloadICESAT()
     # # bounding = [173.719385, -39.675209, 174.661462, -38.967673]  # area = 6349.11 km2
     # # zlimburg = [173.9661, -39.3599, 174.4213, -39.0109]
-    zu_limburg = [5.58311,  50.74222, 6.16390, 51.08249]
+    zu_limburg = [5.58311, 50.74222, 6.16390, 51.08249]
     gr_canyon = [-112.21907, 35.97509, -111.76801, 36.31694]
 
     # # bb = calc_area(zlimburg)
@@ -171,7 +172,7 @@ def _test():
     # t.download("zlimburg")
     # t.input_bbox(zu_limburg)
     # t.earthdata_download()
-    
+
     fpath = "/Users/leokan/Documents/TUDelft/icesatt/raw_data/nz2"
     nz = DownloadICESAT(nzbbox)
     # nz.download_icesat_data(fpath, 'nz_taranaki_combined')
@@ -185,7 +186,6 @@ def _test():
         fpath="/Users/leokan/Documents/TUDelft/ICEpyx/raw_data/nz2",
         csv_name="nz2_combined_cop",
     )
-
 
 
 if __name__ == "__main__":

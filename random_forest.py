@@ -20,11 +20,16 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 # Random Forest Regressors
 from sklearn.ensemble import RandomForestRegressor  # SKLearn
-from skranger.ensemble import RangerForestRegressor # Ranger
-import xgboost as xgb # XGBoost
+from skranger.ensemble import RangerForestRegressor  # Ranger
+import xgboost as xgb  # XGBoost
 
 from sklearn.gaussian_process import GaussianProcessRegressor
-from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV, KFold
+from sklearn.model_selection import (
+    train_test_split,
+    cross_val_score,
+    GridSearchCV,
+    KFold,
+)
 from sklearn.metrics import mean_squared_error, r2_score, max_error, accuracy_score
 from sklearn.inspection import permutation_importance
 
@@ -136,8 +141,8 @@ class Regression:
         self.df = pts_dataframe
         self.grid_raster = pts_grid
         self.X_train = None
-        self.X_test = None 
-        self.y_train = None 
+        self.X_test = None
+        self.y_train = None
         self.y_test = None
 
     def test_train(self):
@@ -152,13 +157,13 @@ class Regression:
 
     # def sklearn_RFregression(self):
     #     self.test_train()
-        
+
     #     # Random Forest Regressor
     #     sklearn_rf_model = RandomForestRegressor(random_state=42, n_jobs=-1)
     #     sklearn_rf_model.fit(self.X_train, self.y_train)
     #     self.rf_evaluation(sklearn_rf_model)
     #     self.rf_model = sklearn_rf_model
-        
+
     #     # -------- Grid Search CV --------
     #     make a dictionary of hyperparameters
     #     param_grid = {
@@ -173,33 +178,34 @@ class Regression:
     #     best_rf_regressor = grid_search.best_estimator_
     #     best_params = grid_search.random_state = best_params_
     #     print(best_params)
-    
-    def sklearn_RFregression(self, use_model=None):
+
+    def sklearn_RFregression(self, use_model=None, params=None):
         self.test_train()
         # ----- Random Forest Regressor -----
+        # use model (if any) && use params (if any)
         if use_model == None:
-            nl_optimal_params = {'max_depth': 50, 'min_samples_split': 2, 'n_estimators': 500, 'n_jobs': -1}
-            sklearn_rf_model = RandomForestRegressor(**nl_optimal_params)
+            sklearn_rf_model = RandomForestRegressor(**params)
         else:
             sklearn_rf_model = joblib.load(use_model)
-        
+
         sklearn_rf_model.fit(self.X_train, self.y_train)
         self.rf_evaluation(sklearn_rf_model)
         self.rf_model = sklearn_rf_model
-        
+        return sklearn_rf_model
+
         # # -------- Grid Search CV --------
         # search_space = {
         #     "n_estimators" : [100, 200, 500],
         #     "max_depth" : [10, 20, 30],
         #     'min_samples_split': [2, 5, 10],
-        #     "n_jobs": [-1]
+        #     "n_jobfs": [-1]
         #     }
-        
+
         # # make a GridSearchCV object
         # GS = GridSearchCV(estimator = sklearn_rf_model,
         #                   param_grid = search_space,
         #                   # sklearn.metrics.SCORERS.keys()
-        #                   scoring = ["r2", "neg_root_mean_squared_error"], 
+        #                   scoring = ["r2", "neg_root_mean_squared_error"],
         #                   refit = "r2",
         #                   cv = 5,
         #                   verbose = 4)
@@ -207,7 +213,7 @@ class Regression:
         # print(GS.best_estimator_)
         # print(GS.best_params_)
         # print(GS.best_score_)
-    
+
     def ranger_RFregression(self):
         self.test_train()
         # ----- Ranger Regressor -----
@@ -216,18 +222,18 @@ class Regression:
         ranger_rf_model.fit(self.X_train, self.y_train)
         self.rf_evaluation(ranger_rf_model)
         self.rf_model = ranger_rf_model
-    
+        return ranger_rf_model
+
     def xgboost_RFregression(self):
         self.test_train()
         # ----- XGBoost Regressor -----
         xgb_rf_model = xgb.XGBRegressor(n_jobs=-1)
-        
+
         # [XGB] Fitting the RF Regression model to the data
         xgb_rf_model.fit(self.X_train, self.y_train)
         self.rf_evaluation(xgb_rf_model)
         self.rf_model = xgb_rf_model
         return xgb_rf_model
-
 
     def rf_evaluation(self, rf_model):
         # Use the model to make predictions on the testing data
@@ -242,13 +248,13 @@ class Regression:
         print("R-squared:", r2)
         print("Max error:", max_err)
         print("--------------------------")
-        
+
         # if val_method == 'kfold'
 
         # print(rf_model.feature_importances_)
         # print(rf_model.n_features_in_)
         # print(rf_model.feature_names_in_)
-        
+
     def save_rfmodel(self, rf_modelname):
         # save the model to disk
         joblib.dump(self.rf_model, rf_modelname)
@@ -267,8 +273,7 @@ class Regression:
         # xr_pred_h.rio.write_nodata(-9999)
         xr_pred_h.rio.set_spatial_dims(x_dim="lon", y_dim="lat")
         xr_pred_h.rio.to_raster(outname, driver="GTiff")
-    
-    
+
     # def cross_validation(self, rf_model, method='kfold'):
     #     if method=='kfold':
     #         scores=[]
@@ -276,7 +281,7 @@ class Regression:
     #         for train_index,test_index in kFold.split(X):
     #             print("Train Index: ", train_index, "\n")
     #             print("Test Index: ", test_index)
-                
+
     #             X_train, X_test, y_train, y_test = X[train_index], X[test_index], y[train_index], y[test_index]
     #             knn.fit(X_train, y_train)
     #             scores.append(knn.score(X_test, y_test))
@@ -295,16 +300,19 @@ def dist_to_pts(icepts, gridpts):
         return d.dist_to("gridpts")
 
 
-def regression(iceDF, gridDF, mode="xgboost", outname="outname.tif", save_rf_model=False, *args, **kwargs):
-    
-    use_model = {"nl": 'ICESAT/zlimburg/results/zlimburg_pred_sklearn_model.joblib',
-                "nz": 'ICESAT/zlimburg/results/nzealand_pred_sklearn_model.joblib',
-                "gc": 'ICESAT/zlimburg/results/gcanyon_pred_sklearn_model.joblib'}
-
+def regression(
+    iceDF,
+    gridDF,
+    mode="sklearn",
+    outname="outname.tif",
+    save_rf_model=False,
+    *params,
+    **kwargs
+):
     save_modelname = outname.removesuffix(".tif") + "_model.joblib"
     r = Regression(iceDF, gridDF)
     if mode == "sklearn":
-        r.sklearn_RFregression()
+        r.sklearn_RFregression(params=params)
         # if save_model
         if save_rf_model == True:
             r.save_rfmodel(save_modelname)
@@ -317,11 +325,14 @@ def regression(iceDF, gridDF, mode="xgboost", outname="outname.tif", save_rf_mod
     elif mode == "xgboost":
         r.xgboost_RFregression()
         if save_rf_model == True:
-                r.save_rfmodel(save_modelname)
-                
-    elif mode == "use-sklearn-zlimurg":
-        r.sklearn_RFregression(use_model["nl"])
+            r.save_rfmodel(save_modelname)
 
+    r.output_tif(outname)
+
+
+def use_rf_model(iceDF, gridDF, use_model=None, outname="outname.tif"):
+    r = Regression(iceDF, gridDF)
+    r.sklearn_RFregression(use_model=use_model)
     r.output_tif(outname)
 
     # r.rf_evaluation(Kfold)

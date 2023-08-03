@@ -18,7 +18,7 @@
             "n_neighbours": 10
         }
     },
-    "save-model": "ICESAT/nzealand/taranaki_model.joblib",
+    "use-model": "ICESAT/nzealand/taranaki_model.joblib",
     "results": {
         "outfile": "ICESAT/nzealand/results/taranaki_pred.tif"
     }
