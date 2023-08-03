@@ -141,6 +141,18 @@ def main():
             "n_estimators": 500,
             "n_jobs": -1,
         },
+        "gc": {
+            "max_depth": 10,
+            "min_samples_split": 2,
+            "n_estimators": 200,
+            "n_jobs": -1,
+        },
+        "nz": {
+            "max_depth": 10,
+            "min_samples_split": 2,
+            "n_estimators": 500,
+            "n_jobs": -1,
+        },
     }
 
     random_forest.regression(
@@ -150,7 +162,7 @@ def main():
         mode="sklearn",
         outname=results_tif + "_sklearnNL.tif",
         save_rf_model=True,
-        params=optimal_params["nl"]
+        params=optimal_params["nl"],
     )
 
     random_forest.use_rf_model(
