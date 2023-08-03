@@ -14,9 +14,10 @@ import multiprocessing, sys, csv, os
 
 import matplotlib.pyplot as plt
 
+
 def main():
     try:
-        jparams = json.load(open("params.json"))
+        jparams = json.load(open("params_gc.json"))
     except:
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
@@ -126,15 +127,39 @@ def main():
     # ----- [4] Random Forest Mahcine Learning ----- #
     results_tif = jparams["results"]["outfile"]
     results_tif = results_tif.removesuffix(".tif")
-    
+
+    models = {
+        "nl": "ICESAT/zlimburg/results/zlimburg_pred_sklearn_model.joblib",
+        "nz": "ICESAT/nzealand/results/nzealand_pred_sklearn_model.joblib",
+        "gc": "ICESAT/gcanyon/results/gcanyon_pred_sklearn_model.joblib",
+    }
+
+    optimal_params = {
+        "nl": {
+            "max_depth": 50,
+            "min_samples_split": 2,
+            "n_estimators": 500,
+            "n_jobs": -1,
+        },
+    }
+
     random_forest.regression(
         # mode: "ranger", "sklearn", "xgboost"
-        icepts_RF, 
-        gridpts_RF, 
-        mode="use-sklearn-zlimurg",
-        outname=results_tif+"_sklearnNL.tif", 
-        save_rf_model = False
+        icepts_RF,
+        gridpts_RF,
+        mode="sklearn",
+        outname=results_tif + "_sklearnNL.tif",
+        save_rf_model=True,
+        params=optimal_params["nl"]
     )
+
+    random_forest.use_rf_model(
+        icepts_RF,
+        gridpts_RF,
+        use_model=models["nl"],
+        outname=results_tif + "_modelNL.tif",
+    )
+
 
 # ----- [3] Prep features data ----- #
 
