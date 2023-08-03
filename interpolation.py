@@ -65,12 +65,12 @@ class Interp:
 
         return grid_raster
 
-    def startin(self):
-        self.dt = startinpy.DT()
-        self.dt.insert(self.pts_in_3d, insertionstrategy="BBox")
+    # def startin(self):
+    #     self.dt = startinpy.DT()
+    #     self.dt.insert(self.pts_in_3d, insertionstrategy="BBox")
 
     def tin(self):
-        self.startin()
+        # self.startin()
         grid_raster = self.make_grid(self.pts_in_3d)
 
         tin_data = []
@@ -88,7 +88,7 @@ class Interp:
         return tin_x
 
     def laplace(self):
-        self.startin()
+        # self.startin()
         grid_raster = self.make_grid(self.pts_in_3d)
 
         lp_data = []
@@ -104,7 +104,7 @@ class Interp:
         return lp_x
 
     def nni(self):
-        self.startin()
+        # self.startin()
         grid_raster = self.make_grid(self.pts_in_3d)
 
         nni_data = []

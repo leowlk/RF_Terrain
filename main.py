@@ -2,6 +2,9 @@
 # from prep_data import Prep, Grid
 # from random_forest import RF
 # from interpolation import Interp
+
+# sbatch job-script.sh
+
 import pandas as pd
 import numpy as np
 import json
@@ -47,21 +50,21 @@ def main():
         return lon, lat
 
     # ----- [1] Interpolation of ICESAT-2 Points -> save as features ----- #
-    interp_pipeline = ["laplace"]  # 'laplace','idw','tin','nni'
+    # interp_pipeline = []  # 'laplace','idw','tin','nni'
     icepts_NP = icepts_LLH.to_numpy()  # Convert pts from pandas to numpy
 
-    for interp_method in interp_pipeline:
-        interp_outtif = jparams["interp"][interp_method]["outfile"]
-        if interp_method == "laplace":
-            interpolation.laplace_interp(icepts_NP, res, interp_outtif)
-        if interp_method == "nni":
-            interpolation.nni_interp(icepts_NP, res, interp_outtif)
-        if interp_method == "tin":
-            interpolation.tin_interp(icepts_NP, res, interp_outtif)
-        if interp_method == "idw":
-            power = jparams["interp"][interp_method]["power"]
-            n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
-            interpolation.idw_interp(icepts_NP, res, interp_outtif, power, n_neighbours)
+    # for interp_method in interp_pipeline:
+    #     interp_outtif = jparams["interp"][interp_method]["outfile"]
+    #     if interp_method == "laplace":
+    #         interpolation.laplace_interp(icepts_NP, res, interp_outtif)
+    #     if interp_method == "nni":
+    #         interpolation.nni_interp(icepts_NP, res, interp_outtif)
+    #     if interp_method == "tin":
+    #         interpolation.tin_interp(icepts_NP, res, interp_outtif)
+    #     if interp_method == "idw":
+    #         power = jparams["interp"][interp_method]["power"]
+    #         n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
+    #         interpolation.idw_interp(icepts_NP, res, interp_outtif, power, n_neighbours)
 
     # ----- [2] Gather GEE features ----- #
     def change_projection():
