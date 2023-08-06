@@ -122,7 +122,7 @@ def main():
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
     icepts_RF = pd.concat([icepts_RF, distance_to_ice], axis=1)
     gridpts_RF = pd.concat([gridpts_RF, distance_to_grid], axis=1)
-
+    
     # ----- [4] Random Forest Mahcine Learning ----- #
     results_tif = jparams["results"]["outfile"]
     results_tif = results_tif.removesuffix(".tif")
