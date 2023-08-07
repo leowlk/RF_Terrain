@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 def main():
     try:
-        jparams = json.load(open("params_nz.json"))
+        jparams = json.load(open("params_au.json"))
     except:
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
@@ -154,21 +154,21 @@ def main():
         }, 
     }
 
-    # random_forest.regression(
-    #     icepts_RF,
-    #     gridpts_RF,
-    #     mode="sklearn", # mode: "ranger", "sklearn", "xgboost"
-    #     outname = results_tif + "_sklearn.tif",
-    #     save_rf_model=False,
-    #     params=optimal_params["gc"],
-    # )
-
-    random_forest.use_rf_model(
+    random_forest.regression(
         icepts_RF,
         gridpts_RF,
-        use_model=models["nl"],
-        outname=results_tif + "_modelNL.tif",
+        mode="sklearn", # mode: "ranger", "sklearn", "xgboost"
+        outname = results_tif + "_sklearn.tif",
+        save_rf_model=False,
+        params={},
     )
+
+    # random_forest.use_rf_model(
+    #     icepts_RF,
+    #     gridpts_RF,
+    #     use_model=None,
+    #     outname=results_tif + "_modelNL.tif",
+    # )
 
 
 # ----- [3] Prep features data ----- #
