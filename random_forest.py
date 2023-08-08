@@ -1,6 +1,7 @@
 from interpolation import Interp
 import rasterio
 import pandas as pd
+import numpy as np
 import json
 import pyproj
 import joblib
@@ -17,6 +18,7 @@ from sklearn.neighbors import NearestNeighbors
 # SK-learn functions
 # from sklearn.neighbors import KDTree
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+
 
 # Random Forest Regressors
 from sklearn.ensemble import RandomForestRegressor  # SKLearn
@@ -132,7 +134,7 @@ class Distances:
         else:
             print("what points??")
         dist_df = pd.DataFrame(d)
-        dist_df.columns = dist_df.columns.astype(str)
+        dist_df.columns = "dist_" + dist_df.columns.astype(str)
         return dist_df
 
 
@@ -161,13 +163,37 @@ class Regression:
         # ----- Random Forest Regressor -----
         if use_model == None:
             sklearn_rf_model = RandomForestRegressor(**params)
-            
+
         # use model (if any) && use params (if any)
         else:
             print("use model is present")
             sklearn_rf_model = joblib.load(use_model)
 
         sklearn_rf_model.fit(self.X_train, self.y_train)
+
+        # # Perm Importance
+        # print("Feature Importance:")
+        # perm_importance = permutation_importance(
+        #     sklearn_rf_model, self.X_test, self.y_test, n_repeats=30, random_state=42
+        # )
+
+        # print("Results:")
+        # importance_mean = perm_importance.importances_mean
+        # importance_std = perm_importance.importances_std
+        # sorted_idx = importance_mean.argsort()[::-1]  # Sort indices in descending order
+        # features = self.X_test.columns.tolist()
+        # sorted_list = []
+        # for i in sorted_idx:
+        #     sorted_list.append([features[i], round(importance_mean[i], 5), round(importance_std[i], 5)])
+        # I = pd.DataFrame(sorted_list)
+
+        # I.columns = ["features", "importance"]
+
+        # I["features"] = I["features"].str.extract(r"(\w+)_")
+        # I = I.groupby("features")["importance"].sum().reset_index()
+        
+        # print(I)
+        
         self.rf_evaluation(sklearn_rf_model)
         self.rf_model = sklearn_rf_model
         return sklearn_rf_model
@@ -175,20 +201,22 @@ class Regression:
     # -------- Grid Search CV --------
     def grid_search(self):
         search_space = {
-            "n_estimators" : [100, 200, 500],
-            "max_depth" : [10, 20, 30],
-            'min_samples_split': [2, 5, 10],
-            "n_jobfs": [-1]
-            }
+            "n_estimators": [100, 200, 500],
+            "max_depth": [10, 20, 30],
+            "min_samples_split": [2, 5, 10],
+            "n_jobfs": [-1],
+        }
 
         # make a GridSearchCV object
-        GS = GridSearchCV(estimator = self.rf_model,
-                          param_grid = search_space,
-                          # sklearn.metrics.SCORERS.keys()
-                          scoring = ["r2", "neg_root_mean_squared_error"],
-                          refit = "r2",
-                          cv = 5,
-                          verbose = 4)
+        GS = GridSearchCV(
+            estimator=self.rf_model,
+            param_grid=search_space,
+            # sklearn.metrics.SCORERS.keys()
+            scoring=["r2", "neg_root_mean_squared_error"],
+            refit="r2",
+            cv=5,
+            verbose=4,
+        )
         GS.fit(self.X_train, self.y_train)
         print(GS.best_estimator_)
         print(GS.best_params_)
@@ -222,11 +250,15 @@ class Regression:
         mse = mean_squared_error(self.y_test, y_pred)
         r2 = r2_score(self.y_test, y_pred)
         max_err = max_error(self.y_test, y_pred)
+        rf_train_acc = rf_model.score(self.X_train, self.y_train)
+        rf_test_acc = rf_model.score(self.X_test, self.y_test)
 
         print("--------[RF Tests]--------")
-        print(f"MSE: {mse:2f}")
-        print(f"R-squared: {r2:4f}")
-        print(f"Max error: {max_err:4f}")
+        print(f"MSE: {mse:.3f}")
+        print(f"R-squared: {r2:.3f}")
+        print(f"Max error: {max_err:.3f}")
+        print(f"RF train accuracy: {rf_train_acc:.3f}")
+        print(f"RF test accuracy: {rf_test_acc:.3f}")
         print("--------------------------")
 
         # if val_method == 'kfold'
@@ -286,10 +318,10 @@ def regression(
     mode="sklearn",
     outname="outname.tif",
     save_rf_model=False,
-    params=None
+    params=None,
 ):
     save_modelname = outname.removesuffix(".tif") + "_model.joblib"
-    
+
     r = Regression(iceDF, gridDF)
     if mode == "sklearn":
         r.sklearn_RFregression(params=params)
@@ -308,18 +340,18 @@ def regression(
             r.save_rfmodel(save_modelname)
     else:
         print("got nothing.")
-            
-    # Output the predicted height to TIF file 
-    r.output_tif(outname)
+
+    # Output the predicted height to TIF file
+    # r.output_tif(outname)
 
 
 def use_rf_model(iceDF, gridDF, use_model=None, outname="outname.tif"):
     r = Regression(iceDF, gridDF)
     r.sklearn_RFregression(use_model=use_model)
-    
+
     print("outputting...")
     r.output_tif(outname)
-    
+
     # r.rf_evaluation(Kfold)
 
 

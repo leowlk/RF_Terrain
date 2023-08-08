@@ -14,9 +14,10 @@ import multiprocessing, sys, csv, os, time
 
 import matplotlib.pyplot as plt
 
+
 def main():
     try:
-        jparams = json.load(open("params_au.json"))
+        jparams = json.load(open("params_gc.json"))
     except:
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
@@ -47,7 +48,7 @@ def main():
         return lon, lat
 
     # ----- [1] Interpolation of ICESAT-2 Points -> save as features ----- #
-    interp_pipeline = ["laplace"]  # 'laplace','idw','tin','nni'
+    interp_pipeline = []  # 'laplace','idw','tin','nni'
     icepts_NP = icepts_LLH.to_numpy()  # Convert pts from pandas to numpy
 
     for interp_method in interp_pipeline:
@@ -81,48 +82,37 @@ def main():
     gridpts_RF = pd.DataFrame()  # Gridpoints Lat-Lon
 
     features = random_forest.get_features_path(jparams["features-path"])
-
-    # One Hot / Normalise Encoding for ICEPTS
-    for feat_label, feat_path in zip(features.keys(), features.values()):
-        # if the features ends with '_c', means it is cat data --> one hot
+            
+    # One Hot / Normalise Encoding for ALL PTS
+    def process_data(df, feat_label, feat_path, location_data):
         if feat_label.endswith("_c"):
-            # one hot encoding
-            sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, icepts_LL)
+            sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, location_data)
             oneHotEncoded_df = random_forest.oneHotEncoding(sampled_df, feat_label)
-            icepts_RF = pd.concat([icepts_RF, oneHotEncoded_df], axis=1)
+            processed_df = pd.concat([df, oneHotEncoded_df], axis=1)
         else:
-            # normalisation of feture data
-            sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, icepts_LL)
+            sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, location_data)
             nsampled_df = sampled_df.drop(columns=["lon", "lat"])
-            # normalised_df = random_forest.normaliseScaling(sampled_df, feat_label)
-            icepts_RF = pd.concat([icepts_RF, nsampled_df], axis=1)
+            processed_df = pd.concat([df, nsampled_df], axis=1)
+        return processed_df
+    
+    for feat_label, feat_path in zip(features.keys(), features.values()):
+        # Process data for ICEPTS
+        icepts_RF = process_data(icepts_RF, feat_label, feat_path, icepts_LL)
+        # Process data for GRIDPTS
+        gridpts_RF = process_data(gridpts_RF, feat_label, feat_path, gridpts_LL)
+
     icepts_RF = pd.concat([icepts_LLH, icepts_RF], axis=1)  # Lat Lon H
-
-    # One Hot / Normalise Encoding for GRIDPTS
-    for feat_label, feat_path in zip(features.keys(), features.values()):
-        # if the features ends with '_c', means it is cat data --> one hot
-        if feat_label.endswith("_c"):
-            # one hot encoding
-            sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, gridpts_LL)
-            oneHotEncoded_df = random_forest.oneHotEncoding(sampled_df, feat_label)
-            gridpts_RF = pd.concat([gridpts_RF, oneHotEncoded_df], axis=1)
-        else:
-            # normalisation of feture data
-            sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, gridpts_LL)
-            nsampled_df = sampled_df.drop(columns=["lon", "lat"])
-            # normalised_df = random_forest.normaliseScaling(sampled_df, feat_label)
-            gridpts_RF = pd.concat([gridpts_RF, nsampled_df], axis=1)
     gridpts_RF = pd.concat([gridpts_LL, gridpts_RF], axis=1)
 
-    # # Distance to points
+    # Distance to ICEPTS
     distance_to_ice = random_forest.dist_to_pts(icepts_LL, icepts_LL)
     distance_to_grid = random_forest.dist_to_pts(icepts_LL, gridpts_LL)
 
-    # # Normalise Interp_h column and concat into gridpts_RF
+    # Normalise Interp_h column and concat into gridpts_RF
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
     icepts_RF = pd.concat([icepts_RF, distance_to_ice], axis=1)
     gridpts_RF = pd.concat([gridpts_RF, distance_to_grid], axis=1)
-    
+
     # ----- [4] Random Forest Mahcine Learning ----- #
     results_tif = jparams["results"]["outfile"]
     results_tif = results_tif.removesuffix(".tif")
@@ -151,14 +141,14 @@ def main():
             "min_samples_split": 2,
             "n_estimators": 200,
             "n_jobs": -1,
-        }, 
+        },
     }
 
     random_forest.regression(
         icepts_RF,
         gridpts_RF,
-        mode="sklearn", # mode: "ranger", "sklearn", "xgboost"
-        outname = results_tif + "_sklearn.tif",
+        mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
+        outname=results_tif + "_sklearn_nolaplace.tif",
         save_rf_model=False,
         params={},
     )
