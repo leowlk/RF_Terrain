@@ -5,6 +5,7 @@ import numpy as np
 import json
 import pyproj
 import joblib
+import matplotlib.pyplot as plt
 
 # Xarray
 import xarray as xr
@@ -163,15 +164,22 @@ class Regression:
         # ----- Random Forest Regressor -----
         if use_model == None:
             sklearn_rf_model = RandomForestRegressor(**params)
-
+            
         # use model (if any) && use params (if any)
         else:
             print("use model is present")
             sklearn_rf_model = joblib.load(use_model)
-
         sklearn_rf_model.fit(self.X_train, self.y_train)
+        
+        # ----- Print RF Tree -----
+        # from sklearn import tree
+        # print(len(sklearn_rf_model.estimators_))
+        # plt.figure(figsize=(10,10))
+        # _ = tree.plot_tree(sklearn_rf_model.estimators_[0], feature_names=list(self.X_train.columns), filled=True)
+        # plt.savefig('plot_tree.png')
+        # plt.show()
 
-        # # Perm Importance
+        # ----- Perm Importance -----
         # print("Feature Importance:")
         # perm_importance = permutation_importance(
         #     sklearn_rf_model, self.X_test, self.y_test, n_repeats=30, random_state=42
@@ -342,7 +350,7 @@ def regression(
         print("got nothing.")
 
     # Output the predicted height to TIF file
-    # r.output_tif(outname)
+    r.output_tif(outname)
 
 
 def use_rf_model(iceDF, gridDF, use_model=None, outname="outname.tif"):

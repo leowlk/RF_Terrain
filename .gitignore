@@ -164,4 +164,5 @@ RF_transferability/
 test.py
 ICESAT(depr)/
 icesat2_download.py
-
+figures/
+tasmania_test/

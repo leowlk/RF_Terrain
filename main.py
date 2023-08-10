@@ -4,6 +4,7 @@
 # from interpolation import Interp
 import pandas as pd
 import numpy as np
+import pprint
 import json
 import interpolation
 from interpolation import Interp
@@ -17,7 +18,7 @@ import matplotlib.pyplot as plt
 
 def main():
     try:
-        jparams = json.load(open("params_gc.json"))
+        jparams = json.load(open("params_au.json"))
     except:
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
@@ -25,9 +26,9 @@ def main():
     # Filtering for based on uncertainty of < 25 meters
     data = pd.read_csv(jparams["icesat_csv"])
     icepts = data[data["h_te_uncertainty"] < 25].reset_index(drop=True)
-
     # Points in 3D pandas dataframe
     icepts_LLH = icepts[["lat", "lon", "h_te_interp"]]
+
     res = jparams["interp"]["resolution"]
 
     # Access to EPSG according to the middle of the csv string
@@ -48,7 +49,7 @@ def main():
         return lon, lat
 
     # ----- [1] Interpolation of ICESAT-2 Points -> save as features ----- #
-    interp_pipeline = []  # 'laplace','idw','tin','nni'
+    interp_pipeline = ['idw']  # 'laplace','idw','tin','nni'
     icepts_NP = icepts_LLH.to_numpy()  # Convert pts from pandas to numpy
 
     for interp_method in interp_pipeline:
@@ -63,6 +64,9 @@ def main():
             power = jparams["interp"][interp_method]["power"]
             n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
             interpolation.idw_interp(icepts_NP, res, interp_outtif, power, n_neighbours)
+        if interp_method == 'aidw':
+            n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
+            interpolation.aidw_interp(icepts_NP, res, interp_outtif, n_neighbours)
 
     # ----- [2] Gather GEE features ----- #
     def change_projection():
@@ -83,7 +87,7 @@ def main():
 
     features = random_forest.get_features_path(jparams["features-path"])
             
-    # One Hot / Normalise Encoding for ALL PTS
+    # One Hot & Normalise Encoding for ALL PTS
     def process_data(df, feat_label, feat_path, location_data):
         if feat_label.endswith("_c"):
             sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, location_data)
@@ -101,9 +105,16 @@ def main():
         # Process data for GRIDPTS
         gridpts_RF = process_data(gridpts_RF, feat_label, feat_path, gridpts_LL)
 
-    icepts_RF = pd.concat([icepts_LLH, icepts_RF], axis=1)  # Lat Lon H
+    icepts_RF = pd.concat([icepts_LLH, icepts_RF], axis=1) 
     gridpts_RF = pd.concat([gridpts_LL, gridpts_RF], axis=1)
-
+    
+    # ----- Correlation -----
+    # print(icepts_RF)    
+    # correlation = icepts_RF.corr(method='pearson')
+    # plt.matshow(correlation)
+    # plt.savefig("ice_corr.png")
+    # plt.show()
+    
     # Distance to ICEPTS
     distance_to_ice = random_forest.dist_to_pts(icepts_LL, icepts_LL)
     distance_to_grid = random_forest.dist_to_pts(icepts_LL, gridpts_LL)
@@ -148,7 +159,7 @@ def main():
         icepts_RF,
         gridpts_RF,
         mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
-        outname=results_tif + "_sklearn_nolaplace.tif",
+        outname= results_tif + "_sklearn_nolaplace.tif",
         save_rf_model=False,
         params={},
     )

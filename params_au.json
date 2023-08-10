@@ -5,6 +5,15 @@
         "resolution": 100,
         "laplace": {
             "outfile": "ICESAT/tasmania/rf_features/interp_laplace.tif"
+        },
+        "aidw": {
+            "outfile": "ICESAT/tasmania/rf_features/interp_aidw.tif",
+            "n_neighbours": 150
+        },
+        "idw": {
+            "outfile": "ICESAT/tasmania/rf_features/interp_idw.tif",
+            "power": 2,
+            "n_neighbours": 50
         }
     },
     "save-model": "ICESAT/tasmania/tasmania_model.joblib",
