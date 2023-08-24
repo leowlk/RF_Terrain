@@ -164,13 +164,13 @@ class Regression:
         # ----- Random Forest Regressor -----
         if use_model == None:
             sklearn_rf_model = RandomForestRegressor(**params)
-            
+
         # use model (if any) && use params (if any)
         else:
             print("use model is present")
             sklearn_rf_model = joblib.load(use_model)
         sklearn_rf_model.fit(self.X_train, self.y_train)
-        
+
         # ----- Print RF Tree -----
         # from sklearn import tree
         # print(len(sklearn_rf_model.estimators_))
@@ -180,28 +180,29 @@ class Regression:
         # plt.show()
 
         # ----- Perm Importance -----
-        # print("Feature Importance:")
-        # perm_importance = permutation_importance(
-        #     sklearn_rf_model, self.X_test, self.y_test, n_repeats=30, random_state=42
-        # )
-
-        # print("Results:")
-        # importance_mean = perm_importance.importances_mean
-        # importance_std = perm_importance.importances_std
-        # sorted_idx = importance_mean.argsort()[::-1]  # Sort indices in descending order
-        # features = self.X_test.columns.tolist()
-        # sorted_list = []
-        # for i in sorted_idx:
-        #     sorted_list.append([features[i], round(importance_mean[i], 5), round(importance_std[i], 5)])
-        # I = pd.DataFrame(sorted_list)
-
-        # I.columns = ["features", "importance"]
-
-        # I["features"] = I["features"].str.extract(r"(\w+)_")
-        # I = I.groupby("features")["importance"].sum().reset_index()
+        print("Feature Importance:")
+        perm_importance = permutation_importance(
+            sklearn_rf_model, self.X_test, self.y_test, n_repeats=30, random_state=42
+        )
+        print("Results:")
+        importance_mean = perm_importance.importances_mean
+        importance_std = perm_importance.importances_std
         
-        # print(I)
-        
+        sorted_idx = importance_mean.argsort()  # Sort indices in descending order
+        features = self.X_test.columns.tolist()
+        sorted_list = []
+        for i in sorted_idx:
+            sorted_list.append([features[i], round(importance_mean[i], 5)])
+            # sorted_list.append([features[i], round(importance_mean[i], 5), round(importance_std[i], 5)])
+        I = pd.DataFrame(sorted_list)
+
+        I.columns = ["features", "importance"]
+
+        I["features"] = I["features"].str.extract(r"(\w+)_")
+        I = I.groupby("features")["importance"].sum().reset_index()
+        I.to_csv("perm_importance.csv")
+        print(I)
+
         self.rf_evaluation(sklearn_rf_model)
         self.rf_model = sklearn_rf_model
         return sklearn_rf_model

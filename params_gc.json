@@ -4,16 +4,16 @@
     "interp": {
         "resolution": 100,
         "laplace": {
-            "outfile": "ICESAT/gcanyon/rf_features/interp_laplace.tif"
+            "outfile": "ICESAT/gcanyon/rf_features/laplace_interp.tif"
         },
         "nni": {
-            "outfile": "ICESAT/gcanyon/rf_features/interp_nni.tif"
+            "outfile": "ICESAT/gcanyon/rf_features/nni_interp.tif"
         },
         "tin": {
-            "outfile": "ICESAT/gcanyon/rf_features/interp_tin.tif"
+            "outfile": "ICESAT/gcanyon/rf_features/tin_interp.tif"
         },
         "idw": {
-            "outfile": "ICESAT/gcanyon/rf_features/interp_idw.tif",
+            "outfile": "ICESAT/gcanyon/rf_features/idw_interp.tif",
             "power": 2,
             "n_neighbours": 10
         }

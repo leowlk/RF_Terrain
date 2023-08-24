@@ -2,19 +2,23 @@
 # from prep_data import Prep, Grid
 # from random_forest import RF
 # from interpolation import Interp
-import pandas as pd
-import numpy as np
-import pprint
+import csv
 import json
-import interpolation
-from interpolation import Interp
-import random_forest
-import pyproj
-import rasterio
-import multiprocessing, sys, csv, os, time
+import multiprocessing
+import os
+import pprint
+import sys
+import time
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import pyproj
+import rasterio
 
+from resources import interpolation
+from resources import random_forest
+from resources.interpolation import Interp
 
 def main():
     try:
@@ -49,7 +53,7 @@ def main():
         return lon, lat
 
     # ----- [1] Interpolation of ICESAT-2 Points -> save as features ----- #
-    interp_pipeline = ['idw']  # 'laplace','idw','tin','nni'
+    interp_pipeline = ["laplace", "aidw", "idw"]  # 'laplace','idw','tin','nni'
     icepts_NP = icepts_LLH.to_numpy()  # Convert pts from pandas to numpy
 
     for interp_method in interp_pipeline:
@@ -64,7 +68,7 @@ def main():
             power = jparams["interp"][interp_method]["power"]
             n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
             interpolation.idw_interp(icepts_NP, res, interp_outtif, power, n_neighbours)
-        if interp_method == 'aidw':
+        if interp_method == "aidw":
             n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
             interpolation.aidw_interp(icepts_NP, res, interp_outtif, n_neighbours)
 
@@ -86,35 +90,39 @@ def main():
     gridpts_RF = pd.DataFrame()  # Gridpoints Lat-Lon
 
     features = random_forest.get_features_path(jparams["features-path"])
-            
+
     # One Hot & Normalise Encoding for ALL PTS
     def process_data(df, feat_label, feat_path, location_data):
         if feat_label.endswith("_c"):
-            sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, location_data)
+            sampled_df = random_forest.sampleFromTIF(
+                feat_label, feat_path, location_data
+            )
             oneHotEncoded_df = random_forest.oneHotEncoding(sampled_df, feat_label)
             processed_df = pd.concat([df, oneHotEncoded_df], axis=1)
         else:
-            sampled_df = random_forest.sampleFromTIF(feat_label, feat_path, location_data)
+            sampled_df = random_forest.sampleFromTIF(
+                feat_label, feat_path, location_data
+            )
             nsampled_df = sampled_df.drop(columns=["lon", "lat"])
             processed_df = pd.concat([df, nsampled_df], axis=1)
         return processed_df
-    
+
     for feat_label, feat_path in zip(features.keys(), features.values()):
         # Process data for ICEPTS
         icepts_RF = process_data(icepts_RF, feat_label, feat_path, icepts_LL)
         # Process data for GRIDPTS
         gridpts_RF = process_data(gridpts_RF, feat_label, feat_path, gridpts_LL)
 
-    icepts_RF = pd.concat([icepts_LLH, icepts_RF], axis=1) 
+    icepts_RF = pd.concat([icepts_LLH, icepts_RF], axis=1)
     gridpts_RF = pd.concat([gridpts_LL, gridpts_RF], axis=1)
-    
+
     # ----- Correlation -----
-    # print(icepts_RF)    
+    # print(icepts_RF)
     # correlation = icepts_RF.corr(method='pearson')
     # plt.matshow(correlation)
     # plt.savefig("ice_corr.png")
     # plt.show()
-    
+
     # Distance to ICEPTS
     distance_to_ice = random_forest.dist_to_pts(icepts_LL, icepts_LL)
     distance_to_grid = random_forest.dist_to_pts(icepts_LL, gridpts_LL)
@@ -159,7 +167,7 @@ def main():
         icepts_RF,
         gridpts_RF,
         mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
-        outname= results_tif + "_sklearn_nolaplace.tif",
+        outname=results_tif + "_sklearn.tif",
         save_rf_model=False,
         params={},
     )
@@ -184,4 +192,4 @@ if __name__ == "__main__":
     main()
     t1 = time.time()
     spent = t1 - t0
-    print(f"==> used {round(spent,2)} seconds")
+    print(f"==> used {round(spent, 2)} seconds")

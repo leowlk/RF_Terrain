@@ -4,14 +4,14 @@
     "interp": {
         "resolution": 100,
         "laplace": {
-            "outfile": "ICESAT/tasmania/rf_features/interp_laplace.tif"
+            "outfile": "ICESAT/tasmania/rf_features/interp_laplace_h.tif"
         },
         "aidw": {
-            "outfile": "ICESAT/tasmania/rf_features/interp_aidw.tif",
-            "n_neighbours": 150
+            "outfile": "ICESAT/tasmania/rf_features/interp_aidw_h.tif",
+            "n_neighbours": 50
         },
         "idw": {
-            "outfile": "ICESAT/tasmania/rf_features/interp_idw.tif",
+            "outfile": "ICESAT/tasmania/rf_features/interp_idw_h.tif",
             "power": 2,
             "n_neighbours": 50
         }
