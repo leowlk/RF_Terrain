@@ -1,0 +1,15 @@
+,features,importance
+0,bare_earth_freq,0.0
+1,dist,2e-05
+2,esri_lulc2020_c,1e-05
+3,geomorhpon_c,0.00011
+4,gl_surface_water_c,0.0
+5,global_crops_c,0.0
+6,global_temp,1e-05
+7,interp_aidw,0.0
+8,interp_idw,1.93763
+9,interp_laplace,0.00073
+10,interp_nn,0.00088
+11,landsat_tree_caopy_cover,1e-05
+12,ndvi2,0.0
+13,world_settlement_c,0.0

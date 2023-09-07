@@ -1,0 +1,26 @@
+{
+    "icesat_csv": "ICESAT/gcanyon/grand_canyon.csv",
+    "features-path": "ICESAT/gcanyon/rf_features",
+    "interp": {
+        "resolution": 100,
+        "laplace": {
+            "outfile": "ICESAT/gcanyon/rf_features/laplace_interp.tif"
+        },
+        "nni": {
+            "outfile": "ICESAT/gcanyon/rf_features/nni_interp.tif"
+        },
+        "tin": {
+            "outfile": "ICESAT/gcanyon/rf_features/tin_interp.tif"
+        },
+        "idw": {
+            "outfile": "ICESAT/gcanyon/rf_features/idw_interp.tif",
+            "power": 2,
+            "n_neighbours": 10
+        }
+    },
+    "save-model": "ICESAT/gcanyon/gcanyon_model.joblib",
+
+    "results": {
+        "outfile": "ICESAT/gcanyon/results/gcanyon_pred.tif"
+    }
+}
