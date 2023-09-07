@@ -16,9 +16,9 @@ import pandas as pd
 import pyproj
 import rasterio
 
-from resources import interpolation
-from resources import random_forest
-from resources.interpolation import Interp
+import interpolation
+import random_forest
+from interpolation import Interp
 
 def main():
     try:
@@ -99,6 +99,7 @@ def main():
             )
             oneHotEncoded_df = random_forest.oneHotEncoding(sampled_df, feat_label)
             processed_df = pd.concat([df, oneHotEncoded_df], axis=1)
+            print(processed_df)
         else:
             sampled_df = random_forest.sampleFromTIF(
                 feat_label, feat_path, location_data
