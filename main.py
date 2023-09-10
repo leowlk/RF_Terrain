@@ -127,36 +127,36 @@ def main():
     # distance_to_grid = random_forest.dist_to_pts(icepts_LLH, gridpts_LL)
 
     # Height of Nearby Points
-    # height_to_ice = random_forest.height_to_pts(icepts_LLH, icepts_LL)
-    # height_to_grid = random_forest.height_to_pts(icepts_LLH, gridpts_LL)
-    
+    height_to_ice = random_forest.height_to_pts(icepts_LLH, icepts_LL)
+    height_to_grid = random_forest.height_to_pts(icepts_LLH, gridpts_LL)
+
     # Slope of Nearby Points
     # slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL)
     # slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL)
 
     # Inbetween Angle of Nearby Point
     angle_to_ice = random_forest.angle_to_pts(icepts_LLH, icepts_LL)
-    angle_to_grid =  random_forest.angle_to_pts(icepts_LLH, gridpts_LL)
+    angle_to_grid = random_forest.angle_to_pts(icepts_LLH, gridpts_LL)
 
     # Normalise Interp_h column and concat into gridpts_RF
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
     icepts_RF = pd.concat(
         [
             icepts_RF,
-            # height_to_ice,
+            height_to_ice,
             # distance_to_ice,
             # slope_to_ice,
-            angle_to_ice
+            angle_to_ice,
         ],
         axis=1,
     )
     gridpts_RF = pd.concat(
         [
             gridpts_RF,
-            # height_to_grid,
+            height_to_grid,
             # distance_to_grid,
             # slope_to_ice,
-            angle_to_grid
+            angle_to_grid,
         ],
         axis=1,
     )

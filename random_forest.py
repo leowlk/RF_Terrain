@@ -166,29 +166,16 @@ class Distances:
         nearest_h_df = pd.DataFrame(near_h)
         nearest_h_df.columns = "nearest_height_" + nearest_h_df.columns.astype(str)
         return nearest_h_df
-    
+
     def angle_to(self, pts="icepts"):
-        knn = NearestNeighbors(n_neighbors=3, algorithm="ball_tree").fit(self.icepts)
-        
+        knn = NearestNeighbors(n_neighbors=20, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
-            d, i = knn.kneighbors(self.icepts)
-            near_h = []
-            for row in i:
-                tmp = []
-                for h_index in row:
-                    ht = self.iceptsH['h_te_interp'][h_index]
-                    print(ht)
-                    
-        elif pts == "gridpts":
             d, i = knn.kneighbors(self.icepts)
             near_angl = []
             for row in i:
                 Orig_pt = self.iceptsH.iloc[row[0]].to_numpy()
                 magO = np.linalg.norm(Orig_pt)
-                print("orig_pt:", Orig_pt)
-                
                 rest_ = row[1:]
-                
                 tmp = []
                 for r in rest_:
                     vecA = self.iceptsH.iloc[r].to_numpy()
@@ -196,24 +183,42 @@ class Distances:
                     dot_product = np.dot(Orig_pt, vecA)
                     magA = np.linalg.norm(vecA)
                     cosine_theta = dot_product / (magO * magA)
-                    
+
                     theta_rad = np.arccos(cosine_theta)
                     theta_deg = np.degrees(theta_rad)
-                    print(theta_deg)
                     tmp.append(theta_deg)
-            
+
                 near_angl.append(tmp)
-            print("-----")
-            
+
+        elif pts == "gridpts":
+            d, i = knn.kneighbors(self.gridpts)
+            near_angl = []
+            for row in i:
+                Orig_pt = self.iceptsH.iloc[row[0]].to_numpy()
+                magO = np.linalg.norm(Orig_pt)
+
+                rest_ = row[1:]
+
+                tmp = []
+                for r in rest_:
+                    vecA = self.iceptsH.iloc[r].to_numpy()
+                    # Dot product of vector vs origin
+                    dot_product = np.dot(Orig_pt, vecA)
+                    magA = np.linalg.norm(vecA)
+                    cosine_theta = dot_product / (magO * magA)
+
+                    theta_rad = np.arccos(cosine_theta)
+                    theta_deg = np.degrees(theta_rad)
+                    tmp.append(theta_deg)
+
+                near_angl.append(tmp)
+
         else:
             print("what points??")
-        
-        breakpoint()
+
         angle_df = pd.DataFrame(near_angl)
         angle_df.columns = "angle_btwn_" + angle_df.columns.astype(str)
         return angle_df
-
-                    
 
     def slope_to(self, pts="icepts"):
         knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(self.icepts)
@@ -472,6 +477,7 @@ def height_to_pts(icepts, gridpts):
     else:
         return d.height_to("gridpts")
 
+
 def angle_to_pts(icepts, gridpts):
     d = Distances(icepts, gridpts)
     if gridpts is icepts:
@@ -479,13 +485,13 @@ def angle_to_pts(icepts, gridpts):
     else:
         return d.angle_to("gridpts")
 
+
 # def slope_to_pts(icepts, gridpts):
 #     d = Distances(icepts, gridpts)
 #     if gridpts is icepts:
 #         return d.slope_to("icepts")
 #     else:
 #         return d.slope_to("gridpts")
-
 
 
 def regression(
