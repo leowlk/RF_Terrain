@@ -111,8 +111,8 @@ def normaliseScaling(feat_df, feat_labl):
 
 class Distances:
     def __init__(self, icepts, gridpts) -> None:
-        self.icepts = icepts[['lat','lon']]
-        self.iceptsH = icepts[['lat','lon','h_te_interp']]
+        self.icepts = icepts[["lat", "lon"]]
+        self.iceptsH = icepts[["lat", "lon", "h_te_interp"]]
         self.gridpts = gridpts
 
     def convert_coordinates(lon, lat, from_epsg=4326, to_epsg=None):
@@ -140,49 +140,108 @@ class Distances:
 
     def height_to(self, pts="icepts"):
         knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(self.icepts)
-        if pts == "icepts":  
+        if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
-            near_h = [[self.iceptsH['h_te_interp'][h_index] for h_index in row[1:]] for row in i]
+            near_h = [
+                [self.iceptsH["h_te_interp"][h_index] for h_index in row[1:]]
+                for row in i
+            ]
             # near_h = []
             # for row in i:
             #     tmp = []
             #     for h_index in row:
-            #         ht = self.iceptsH['h_te_interp'][h_index]  
+            #         ht = self.iceptsH['h_te_interp'][h_index]
             #         tmp.append(ht)
             #     near_h.append(tmp)
 
         elif pts == "gridpts":
             d, i = knn.kneighbors(self.gridpts)
-            near_h = [[self.iceptsH['h_te_interp'][h_index] for h_index in row[1:]] for row in i]
+            near_h = [
+                [self.iceptsH["h_te_interp"][h_index] for h_index in row[1:]]
+                for row in i
+            ]
         else:
             print("what points??")
-        
+
         nearest_h_df = pd.DataFrame(near_h)
         nearest_h_df.columns = "nearest_height_" + nearest_h_df.columns.astype(str)
         return nearest_h_df
     
     def angle_to(self, pts="icepts"):
-        knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(self.icepts)
-        if pts == "icepts":  
+        knn = NearestNeighbors(n_neighbors=3, algorithm="ball_tree").fit(self.icepts)
+        
+        if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
-            near_h = [[self.iceptsH['h_te_interp'][h_index] for h_index in row] for row in i]
+            near_h = []
+            for row in i:
+                tmp = []
+                for h_index in row:
+                    ht = self.iceptsH['h_te_interp'][h_index]
+                    print(ht)
+                    
+        elif pts == "gridpts":
+            d, i = knn.kneighbors(self.icepts)
+            near_angl = []
+            for row in i:
+                Orig_pt = self.iceptsH.iloc[row[0]].to_numpy()
+                magO = np.linalg.norm(Orig_pt)
+                print("orig_pt:", Orig_pt)
+                
+                rest_ = row[1:]
+                
+                tmp = []
+                for r in rest_:
+                    vecA = self.iceptsH.iloc[r].to_numpy()
+                    # Dot product of vector vs origin
+                    dot_product = np.dot(Orig_pt, vecA)
+                    magA = np.linalg.norm(vecA)
+                    cosine_theta = dot_product / (magO * magA)
+                    
+                    theta_rad = np.arccos(cosine_theta)
+                    theta_deg = np.degrees(theta_rad)
+                    print(theta_deg)
+                    tmp.append(theta_deg)
+            
+                near_angl.append(tmp)
+            print("-----")
+            
+        else:
+            print("what points??")
+        
+        breakpoint()
+        angle_df = pd.DataFrame(near_angl)
+        angle_df.columns = "angle_btwn_" + angle_df.columns.astype(str)
+        return angle_df
+
+                    
+
+    def slope_to(self, pts="icepts"):
+        knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(self.icepts)
+        if pts == "icepts":
+            d, i = knn.kneighbors(self.icepts)
+            near_h = [
+                [self.iceptsH["h_te_interp"][h_index] for h_index in row] for row in i
+            ]
             # near_h = []
             # for row in i:
             #     tmp = []
             #     for h_index in row:
-            #         ht = self.iceptsH['h_te_interp'][h_index]  
+            #         ht = self.iceptsH['h_te_interp'][h_index]
             #         tmp.append(ht)
             #     near_h.append(tmp)
 
         elif pts == "gridpts":
             d, i = knn.kneighbors(self.gridpts)
-            near_h = [[self.iceptsH['h_te_interp'][h_index] for h_index in row] for row in i]
+            near_h = [
+                [self.iceptsH["h_te_interp"][h_index] for h_index in row] for row in i
+            ]
         else:
             print("what points??")
-        
+
         nearest_h_df = pd.DataFrame(near_h)
         nearest_h_df.columns = "nearest_height_" + nearest_h_df.columns.astype(str)
         return nearest_h_df
+
 
 class Regression:
     def __init__(self, pts_dataframe, pts_grid) -> None:
@@ -210,7 +269,7 @@ class Regression:
         print("Results:")
         importance_mean = perm_importance.importances_mean
         importance_std = perm_importance.importances_std
-        
+
         sorted_idx = importance_mean.argsort()  # Sort indices in descending order
         features = self.X_test.columns.tolist()
         sorted_list = []
@@ -225,11 +284,11 @@ class Regression:
         I = I.groupby("features")["importance"].sum().reset_index()
         I.to_csv("perm_importance.csv")
         print(I)
-    
+
     def mdi_importance(self, rf_model):
         print("MDI Importance:")
         mdi_importance = rf_model.feature_importances_
-            
+
         sorted_idx = mdi_importance.argsort()  # Sort indices in descending order
         features = self.X_test.columns.tolist()
         sorted_list = []
@@ -245,7 +304,6 @@ class Regression:
         I.to_csv("mdi_importance.csv")
         print(I)
 
-
     def sklearn_RFregression(self, use_model=None, params={}):
         self.test_train()
         # ----- Random Forest Regressor -----
@@ -260,11 +318,19 @@ class Regression:
 
         # ----- Print RF Tree -----
         from sklearn import tree
-        print(len(sklearn_rf_model.estimators_))
-        plt.figure(figsize=(10,10))
-        _ = tree.plot_tree(sklearn_rf_model.estimators_[0], feature_names=list(self.X_train.columns), filled=True)
-        # plt.savefig('plot_tree.png')
-        plt.show()
+
+        # print(len(sklearn_rf_model.estimators_))
+        # # plt.figure(figsize=(10,10))
+        # _ = tree.plot_tree(
+        #     sklearn_rf_model.estimators_[0],
+        #     feature_names=list(self.X_train.columns),
+        #     filled=True,
+        #     node_ids=True,
+        #     fontsize=4,
+        #     max_depth=3,
+        # )
+        # # plt.savefig('plotted_tree.png')
+        # plt.show()
 
         # ----- Feature Importances -----
         # self.perm_importance(sklearn_rf_model)
@@ -339,11 +405,11 @@ class Regression:
 
         residuals = self.y_test - y_pred
         plt.figure(figsize=(8, 6))
-        plt.scatter(y_pred, residuals, c='blue', marker='o', label='Residuals')
-        plt.axhline(y=0, color='red', linestyle='-', label='Zero Residual Line')
-        plt.xlabel('Predicted Values')
-        plt.ylabel('Residuals')
-        plt.title('Residual Plot for Random Forest Regression')
+        plt.scatter(y_pred, residuals, c="blue", marker="o", label="Residuals")
+        plt.axhline(y=0, color="red", linestyle="-", label="Zero Residual Line")
+        plt.xlabel("Predicted Values")
+        plt.ylabel("Residuals")
+        plt.title("Residual Plot for Random Forest Regression")
         plt.legend()
         plt.grid(True)
         plt.show()
@@ -398,6 +464,7 @@ def dist_to_pts(icepts, gridpts):
     else:
         return d.dist_to("gridpts")
 
+
 def height_to_pts(icepts, gridpts):
     d = Distances(icepts, gridpts)
     if gridpts is icepts:
@@ -411,6 +478,14 @@ def angle_to_pts(icepts, gridpts):
         return d.angle_to("icepts")
     else:
         return d.angle_to("gridpts")
+
+# def slope_to_pts(icepts, gridpts):
+#     d = Distances(icepts, gridpts)
+#     if gridpts is icepts:
+#         return d.slope_to("icepts")
+#     else:
+#         return d.slope_to("gridpts")
+
 
 
 def regression(

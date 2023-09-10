@@ -160,3 +160,9 @@ cython_debug/
 #.idea/
 
 /ICESAT
+.DS_Store
+.idea/
+RF_transferability/
+figures/
+plotted_tree.png
+tasmania_test/

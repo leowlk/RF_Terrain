@@ -92,7 +92,7 @@ class Interp:
                 tin_data.append(data)
 
         self.tin_p = pd.DataFrame(tin_data, columns=["lat", "lon", "interp_h"])
-        
+
         tin_h = xr.Dataset.from_dataframe(self.tin_p.set_index(["lon", "lat"]))
         return tin_h
 
@@ -215,7 +215,7 @@ class Interp:
 
         for grid_point in grid_raster:
             dist, ind = kd.query(grid_point, k=n_neighbours, p=2)  # n_neighbour
-            
+
             neighbour_icepts_list = pts_in_3d[ind]  # [[...]  [...]  [...]]
 
             heights = self.pts_in_3d[ind][:, 2]
@@ -236,7 +236,9 @@ class Interp:
                     sin_T = 1
                     sin_theta.append(sin_T)
 
-            sum_height = [k / d**power * h for d, h, k in zip(dist, heights, sin_theta)]
+            sum_height = [
+                k / d**power * h for d, h, k in zip(dist, heights, sin_theta)
+            ]
             sum_weight = [k * d ** (-power) for d, k in zip(dist, sin_theta)]
 
             s = sum(sum_height) / sum(sum_weight)
@@ -252,10 +254,10 @@ class Interp:
         # x_arr = x_arr.dropna("lon", how="all")
         # imputer = KNNImputer(n_neighbors=30)
         # tin_arr = imputer.fit_transform(x_arr["interp_h"].values)
-        # tin_xarr = xr.DataArray(tin_arr, dims=("lat", "lon")) 
+        # tin_xarr = xr.DataArray(tin_arr, dims=("lat", "lon"))
         # x_arr["interp_h"] = tin_xarr
         # ++++++++++++++++++++++++++++
-        
+
         x_arr.rio.set_crs("epsg:5551")
         x_arr.rio.set_spatial_dims("lat", "lon")
         x_arr.rio.to_raster(*output_file, driver="GTiff")
@@ -266,35 +268,41 @@ def laplace_interp(data, res, outname):
     arr = i.laplace()
     i.output(arr, outname)
 
+
 def nni_interp(data, res, outname):
     i = Interp(data, res)
     xarr = i.nni()
     i.output(xarr, outname)
+
 
 def nn_interp(data, res, outname):
     i = Interp(data, res)
     xarr = i.nn()
     i.output(xarr, outname)
 
+
 def tin_interp(data, res, outname):
     i = Interp(data, res)
     xarr = i.tin()
     i.output(xarr, outname)
+
 
 def idw_interp(data, res, outname, power=2, n_neighbours=10):
     i = Interp(data, res)
     arr = i.idw(power, n_neighbours)
     i.output(arr, outname)
 
+
 def aidw_interp(data, res, outname, n_neighbours=10):
     i = Interp(data, res)
     arr = i.aidw(n_neighbours)
     i.output(arr, outname)
 
+
 def _test():
     tasman = pd.read_csv("ICESAT/tasmania/tasman_samples.csv", delimiter=" ")
     tasman_NP = tasman.to_numpy()
-    
+
     laplace_interp(tasman_NP, 1, "ICESAT/tasmania/tasmania_laplace.tif")
     idw_interp(tasman_NP, 1, "ICESAT/tasmania/tasmania_idw.tif")
     nni_interp(tasman_NP, 1, "ICESAT/tasmania/tasmania_nni.tif")
