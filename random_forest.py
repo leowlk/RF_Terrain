@@ -133,19 +133,17 @@ class Distances:
         elif pts == "gridpts":
             d, i = knn.kneighbors(self.gridpts)
         else:
-            print("what points??")
+            print("Invalid points specified.")
+            return None
         dist_df = pd.DataFrame(d)
-        dist_df.columns = "buffer_dist_" + dist_df.columns.astype(str)
+        dist_df.columns = "dist_buffer_" + dist_df.columns.astype(str)
         return dist_df
 
     def height_to(self, pts="icepts"):
         knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
-            near_h = [
-                [self.iceptsH["h_te_interp"][h_index] for h_index in row[1:]]
-                for row in i
-            ]
+            near_h = [[self.iceptsH["h_te_interp"][h_index] for h_index in row[1:]] for row in i]
             # near_h = []
             # for row in i:
             #     tmp = []
@@ -156,96 +154,106 @@ class Distances:
 
         elif pts == "gridpts":
             d, i = knn.kneighbors(self.gridpts)
-            near_h = [
-                [self.iceptsH["h_te_interp"][h_index] for h_index in row[1:]]
-                for row in i
-            ]
+            near_h = [[self.iceptsH["h_te_interp"][h_index] for h_index in row[1:]] for row in i]
+            # near_h = []
+            # for row in i:
+            #     tmp = []
+            #     for h_index in row:
+            #         ht = self.iceptsH['h_te_interp'][h_index]
+            #         tmp.append(ht)
+            #     near_h.append(tmp)
         else:
-            print("what points??")
+            print("Invalid points specified.")
+            return None
 
         nearest_h_df = pd.DataFrame(near_h)
         nearest_h_df.columns = "nearest_height_" + nearest_h_df.columns.astype(str)
         return nearest_h_df
-
+    
     def angle_to(self, pts="icepts"):
-        knn = NearestNeighbors(n_neighbors=20, algorithm="ball_tree").fit(self.icepts)
+        knn = NearestNeighbors(n_neighbors=10, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
             near_angl = []
             for row in i:
-                Orig_pt = self.iceptsH.iloc[row[0]].to_numpy()
-                magO = np.linalg.norm(Orig_pt)
-                rest_ = row[1:]
-                tmp = []
-                for r in rest_:
+                pt_0 = self.iceptsH.iloc[row[0]].to_numpy()
+                magO = np.linalg.norm(pt_0)
+                pt_rest = row[1:]
+                _tmp = []
+                for r in pt_rest:
                     vecA = self.iceptsH.iloc[r].to_numpy()
                     # Dot product of vector vs origin
-                    dot_product = np.dot(Orig_pt, vecA)
+                    dot_product = np.dot(pt_0, vecA)
                     magA = np.linalg.norm(vecA)
                     cosine_theta = dot_product / (magO * magA)
-
                     theta_rad = np.arccos(cosine_theta)
                     theta_deg = np.degrees(theta_rad)
-                    tmp.append(theta_deg)
-
-                near_angl.append(tmp)
+                    _tmp.append(theta_deg)
+                near_angl.append(_tmp)
 
         elif pts == "gridpts":
             d, i = knn.kneighbors(self.gridpts)
             near_angl = []
             for row in i:
-                Orig_pt = self.iceptsH.iloc[row[0]].to_numpy()
-                magO = np.linalg.norm(Orig_pt)
-
-                rest_ = row[1:]
-
-                tmp = []
-                for r in rest_:
+                pt_0 = self.iceptsH.iloc[row[0]].to_numpy()
+                magO = np.linalg.norm(pt_0)
+                pt_rest = row[1:]
+                _tmp = []
+                for r in pt_rest:
                     vecA = self.iceptsH.iloc[r].to_numpy()
                     # Dot product of vector vs origin
-                    dot_product = np.dot(Orig_pt, vecA)
+                    dot_product = np.dot(pt_0, vecA)
                     magA = np.linalg.norm(vecA)
                     cosine_theta = dot_product / (magO * magA)
-
                     theta_rad = np.arccos(cosine_theta)
                     theta_deg = np.degrees(theta_rad)
-                    tmp.append(theta_deg)
-
-                near_angl.append(tmp)
+                    _tmp.append(theta_deg)
+                near_angl.append(_tmp)
 
         else:
-            print("what points??")
-
+            print("Invalid points specified.")
+            return None
+        
         angle_df = pd.DataFrame(near_angl)
         angle_df.columns = "angle_btwn_" + angle_df.columns.astype(str)
         return angle_df
+    
 
-    def slope_to(self, pts="icepts"):
-        knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(self.icepts)
+    def relativeh_to(self, pts="icepts"):
+        knn = NearestNeighbors(n_neighbors=100, algorithm="ball_tree").fit(self.icepts)        
         if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
-            near_h = [
-                [self.iceptsH["h_te_interp"][h_index] for h_index in row] for row in i
-            ]
-            # near_h = []
-            # for row in i:
-            #     tmp = []
-            #     for h_index in row:
-            #         ht = self.iceptsH['h_te_interp'][h_index]
-            #         tmp.append(ht)
-            #     near_h.append(tmp)
-
+            relative_h_list = []
+            for row in i:            
+                pt_0 = self.iceptsH.iloc[row[0]].to_numpy()
+                pt_rest = row[1:]
+                _tmp = []
+                for r in pt_rest:
+                    pt_r = self.iceptsH.iloc[r].to_numpy()
+                    diff = pt_r - pt_0
+                    _tmp.append(diff[2])
+                relative_h_list.append(_tmp)
+        
         elif pts == "gridpts":
             d, i = knn.kneighbors(self.gridpts)
-            near_h = [
-                [self.iceptsH["h_te_interp"][h_index] for h_index in row] for row in i
-            ]
+            relative_h_list = []
+            for row in i:            
+                pt_0 = self.iceptsH.iloc[row[0]].to_numpy()
+                pt_rest = row[1:]
+                _tmp = []
+                for r in pt_rest:
+                    pt_r = self.iceptsH.iloc[r].to_numpy()
+                    diff = pt_r - pt_0
+                    _tmp.append(diff[2])
+                relative_h_list.append(_tmp)
         else:
-            print("what points??")
+            print("Invalid points specified.")
+            return None
 
-        nearest_h_df = pd.DataFrame(near_h)
-        nearest_h_df.columns = "nearest_height_" + nearest_h_df.columns.astype(str)
-        return nearest_h_df
+        relative_h_df = pd.DataFrame(relative_h_list)
+        relative_h_df.columns = "relative_h_" + relative_h_df.columns.astype(str)
+        return relative_h_df
+
 
 
 class Regression:
@@ -408,16 +416,25 @@ class Regression:
         print(f"RF test accuracy: {rf_test_acc:.3f}")
         print("--------------------------")
 
-        residuals = self.y_test - y_pred
+        # residuals = self.y_test - y_pred
+        # plt.figure(figsize=(8, 6))
+        # plt.scatter(y_pred, residuals, c="blue", marker="o", label="Residuals")
+        # plt.axhline(y=0, color="red", linestyle="-", label="Zero Residual Line")
+        # plt.xlabel("Predicted Values")
+        # plt.ylabel("Residuals")
+        # plt.title("Residual Plot for Random Forest Regression")
+        # plt.legend()
+        # plt.grid(True)
+        # plt.show()
+        
         plt.figure(figsize=(8, 6))
-        plt.scatter(y_pred, residuals, c="blue", marker="o", label="Residuals")
-        plt.axhline(y=0, color="red", linestyle="-", label="Zero Residual Line")
-        plt.xlabel("Predicted Values")
-        plt.ylabel("Residuals")
-        plt.title("Residual Plot for Random Forest Regression")
-        plt.legend()
+        plt.scatter(self.y_train, y_pred, alpha=0.5)
+        plt.xlabel("Observed Values")
+        plt.ylabel("Predicted Values")
+        plt.title("Scatter Plot of Predicted vs Observed Values for Random Forest Regression")
         plt.grid(True)
         plt.show()
+
 
         # if val_method == 'kfold'
 
@@ -485,14 +502,12 @@ def angle_to_pts(icepts, gridpts):
     else:
         return d.angle_to("gridpts")
 
-
-# def slope_to_pts(icepts, gridpts):
-#     d = Distances(icepts, gridpts)
-#     if gridpts is icepts:
-#         return d.slope_to("icepts")
-#     else:
-#         return d.slope_to("gridpts")
-
+def relativeh_to_pts(icepts, gridpts):
+    d = Distances(icepts, gridpts)
+    if gridpts is icepts:
+        return d.relativeh_to("icepts")
+    else:
+        return d.relativeh_to("gridpts")
 
 def regression(
     iceDF,

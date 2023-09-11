@@ -13,6 +13,7 @@ import rasterio
 import multiprocessing, sys, csv, os, time
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def main():
@@ -24,8 +25,10 @@ def main():
 
     # Filtering for based on uncertainty of < 25 meters
     data = pd.read_csv(jparams["icesat_csv"])
-
-    # icepts = data[data["h_te_uncertainty"] < 25].reset_index(drop=True)
+    # remove duplicates from the dataset
+    # data.drop_duplicates(subset=['lat', 'lon'], inplace=True)
+    icepts = data[data["h_te_uncertainty"] < 25].reset_index(drop=True)
+    
     # Points in 3D pandas dataframe
     icepts = data
     icepts_LLH = icepts[["lat", "lon", "h_te_interp"]]
@@ -115,37 +118,28 @@ def main():
     icepts_RF = pd.concat([icepts_LLH, icepts_RF], axis=1)
     gridpts_RF = pd.concat([gridpts_LL, gridpts_RF], axis=1)
 
-    # ----- Correlation -----
-    # print(icepts_RF)
-    # correlation = icepts_RF.corr(method='pearson')
-    # plt.matshow(correlation)
-    # plt.savefig("ice_corr.png")
-    # plt.show()
-
     # Buffer Distance to Points
-    # distance_to_ice = random_forest.dist_to_pts(icepts_LLH, icepts_LL)
-    # distance_to_grid = random_forest.dist_to_pts(icepts_LLH, gridpts_LL)
-
+    distance_to_ice = random_forest.dist_to_pts(icepts_LLH, icepts_LL)
+    distance_to_grid = random_forest.dist_to_pts(icepts_LLH, gridpts_LL)
     # Height of Nearby Points
     height_to_ice = random_forest.height_to_pts(icepts_LLH, icepts_LL)
     height_to_grid = random_forest.height_to_pts(icepts_LLH, gridpts_LL)
-
-    # Slope of Nearby Points
-    # slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL)
-    # slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL)
-
     # Inbetween Angle of Nearby Point
     angle_to_ice = random_forest.angle_to_pts(icepts_LLH, icepts_LL)
     angle_to_grid = random_forest.angle_to_pts(icepts_LLH, gridpts_LL)
+    # Slope of Nearby Points
+    relativeh_to_ice = random_forest.relativeh_to_pts(icepts_LLH, icepts_LL)
+    relativeh_to_grid = random_forest.relativeh_to_pts(icepts_LLH, gridpts_LL)
+
 
     # Normalise Interp_h column and concat into gridpts_RF
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
     icepts_RF = pd.concat(
         [
             icepts_RF,
+            relativeh_to_ice,
             height_to_ice,
-            # distance_to_ice,
-            # slope_to_ice,
+            distance_to_ice,
             angle_to_ice,
         ],
         axis=1,
@@ -153,14 +147,30 @@ def main():
     gridpts_RF = pd.concat(
         [
             gridpts_RF,
+            relativeh_to_grid,
             height_to_grid,
-            # distance_to_grid,
-            # slope_to_ice,
+            distance_to_grid,
             angle_to_grid,
         ],
         axis=1,
     )
 
+    # ----- Correlation Matrix -----
+    # correlation = icepts_RF.corr(method='spearman')
+    # correlation.dropna(axis=0, how='all', inplace=True)
+    # correlation.dropna(axis=1, how='all', inplace=True)
+    # # plt.matshow(correlation)
+    # plt.figure(figsize=(8, 7)) 
+    # sns.heatmap(correlation, annot=False, cmap='coolwarm', vmin=-1, vmax=1,
+    #             xticklabels=correlation.columns, yticklabels=correlation.columns)
+    # # plt.savefig("correlation_matrix.png")
+    # plt.title("Correlation Matrix")
+    # plt.tight_layout()
+    # plt.show()
+    
+    # breakpoint()
+    # ------------------------------
+    
     # ----- [4] Random Forest Mahcine Learning ----- #
     results_tif = jparams["results"]["outfile"]
     results_tif = results_tif.removesuffix(".tif")
@@ -196,7 +206,7 @@ def main():
         icepts_RF,
         gridpts_RF,
         mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
-        outname=results_tif + "_sklearn.tif",
+        outname=results_tif + "icesat_sklearn_geometric.tif",
         save_rf_model=False,
         params={"criterion": "squared_error"},
     )

@@ -1,5 +1,5 @@
 {
-    "icesat_csv": "ICESAT/tasmania/tasman_samples4.csv",
+    "icesat_csv": "ICESAT/tasmania/tasmania.csv",
     "features-path": "ICESAT/tasmania/rf_features",
     "interp": {
         "resolution": 100,
@@ -22,6 +22,6 @@
     "save-model": "ICESAT/tasmania/tasmania_model.joblib",
 
     "results": {
-        "outfile": "ICESAT/tasmania/results/tasmania_nearest_h.tif"
+        "outfile": "ICESAT/tasmania/results/tasmania_.tif"
     }
 }

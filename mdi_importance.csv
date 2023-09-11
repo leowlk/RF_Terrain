@@ -1,3 +1,5 @@
 ,features,importance
-0,angle_btwn,0.04109
-1,nearest_height,0.95653
+0,angle_btwn,0.00071
+1,dist_buffer,0.0
+2,nearest_height,0.99666
+3,relative_h,0.00246
