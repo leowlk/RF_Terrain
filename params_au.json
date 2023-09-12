@@ -7,7 +7,7 @@
             "outfile": "ICESAT/tasmania/rf_features/interp_laplace_h.tif"
         },
         "aidw": {
-            "outfile": "ICESAT/tasmania/rf_features/interp_aidw_h.tif",
+            "outfile": "ICESAT/ta msmania/rf_features/interp_aidw_h.tif",
             "n_neighbours": 100
         },
         "idw": {

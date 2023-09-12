@@ -1,5 +1,13 @@
 ,features,importance
-0,angle_btwn,0.00071
-1,dist_buffer,0.0
-2,nearest_height,0.99666
-3,relative_h,0.00246
+0,angle_btwn,0.07808000000000001
+1,bare_earth_freq,0.00011
+2,dist_buffer,0.01131
+3,esri_lulc2020_c,0.06902
+4,geomorhpon_c,0.00076
+5,gl_surface_water_c,0.00035
+6,global_crops_c,0.00014
+7,global_temp,0.26433
+8,landsat_tree_caopy_cover,0.36457
+9,ndvi2,0.01673
+10,relative_h,0.09477000000000001
+11,world_settlement_c,0.0

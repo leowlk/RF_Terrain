@@ -32,6 +32,10 @@ from sklearn.model_selection import (
     GridSearchCV,
     KFold,
 )
+
+from mlxtend.feature_selection import SequentialFeatureSelector as SFS
+from mlxtend.plotting import plot_sequential_feature_selection
+
 from sklearn.metrics import mean_squared_error, r2_score, max_error, accuracy_score
 from sklearn.inspection import permutation_importance
 
@@ -266,10 +270,10 @@ class Regression:
         self.y_test = None
 
     def test_train(self):
-        x = self.df.drop(columns=["h_te_interp"])
-        y = self.df["h_te_interp"]  # Target
+        self.x_ml = self.df.drop(columns=["h_te_interp"])
+        self.y_ml = self.df["h_te_interp"]  # Target
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            x, y, test_size=0.2, random_state=42
+            self.x_ml, self.y_ml, test_size=0.2, random_state=42
         )
         return self.X_train, self.X_test, self.y_train, self.y_test
 
@@ -348,7 +352,7 @@ class Regression:
         # ----- Feature Importances -----
         # self.perm_importance(sklearn_rf_model)
         self.mdi_importance(sklearn_rf_model)
-
+        # self.sfs_selection(sklearn_rf_model)
         self.rf_evaluation(sklearn_rf_model)
         self.rf_model = sklearn_rf_model
         return sklearn_rf_model
@@ -427,13 +431,13 @@ class Regression:
         # plt.grid(True)
         # plt.show()
         
-        plt.figure(figsize=(8, 6))
-        plt.scatter(self.y_train, y_pred, alpha=0.5)
-        plt.xlabel("Observed Values")
-        plt.ylabel("Predicted Values")
-        plt.title("Scatter Plot of Predicted vs Observed Values for Random Forest Regression")
-        plt.grid(True)
-        plt.show()
+        # plt.figure(figsize=(8, 6))
+        # plt.scatter(self.y_ml, y_pred, alpha=0.5)
+        # plt.xlabel("Observed Values")
+        # plt.ylabel("Predicted Values")
+        # plt.title("Scatter Plot of Predicted vs Observed Values for Random Forest Regression")
+        # plt.grid(True)
+        # plt.show()
 
 
         # if val_method == 'kfold'
@@ -445,6 +449,21 @@ class Regression:
     def save_rfmodel(self, rf_modelname):
         # save the model to disk
         joblib.dump(self.rf_model, rf_modelname)
+    
+    def sfs_selection(self, rf_model):
+        print("SFS Features Selection:")
+        sfs = SFS(rf_model, k_features=10, forward=True, floating=False, scoring='neg_mean_squared_error', cv=None)
+        sfs = sfs.fit(self.x_ml, self.y_ml)
+        selected_feature_indices = sfs.k_feature_idx_
+        elected_features = self.X_train.columns[list(selected_feature_indices)]
+        print(elected_features)
+        
+        fig = plot_sequential_feature_selection(sfs.get_metric_dict(), kind='std_dev')
+        # Customize the plot (optional)
+        plt.title('Sequential Forward Selection (SFS)')
+        plt.grid()
+        plt.show()
+        return None
 
     def output_tif(self, outname):
         pred_h = pd.DataFrame(self.grid_raster, columns=self.X_train.columns)
@@ -551,10 +570,7 @@ def use_rf_model(iceDF, gridDF, use_model=None, outname="outname.tif"):
 
     # r.rf_evaluation(Kfold)
 
-
 def _test():
     pass
-
-
 if __name__ == "__main__":
     _test()

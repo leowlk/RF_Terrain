@@ -26,8 +26,7 @@ def main():
     # Filtering for based on uncertainty of < 25 meters
     data = pd.read_csv(jparams["icesat_csv"])
     # remove duplicates from the dataset
-    # data.drop_duplicates(subset=['lat', 'lon'], inplace=True)
-    icepts = data[data["h_te_uncertainty"] < 25].reset_index(drop=True)
+    # icepts = data[data["h_te_uncertainty"] < 25].reset_index(drop=True)
     
     # Points in 3D pandas dataframe
     icepts = data
@@ -138,7 +137,7 @@ def main():
         [
             icepts_RF,
             relativeh_to_ice,
-            height_to_ice,
+            # height_to_ice,
             distance_to_ice,
             angle_to_ice,
         ],
@@ -148,7 +147,7 @@ def main():
         [
             gridpts_RF,
             relativeh_to_grid,
-            height_to_grid,
+            # height_to_grid,
             distance_to_grid,
             angle_to_grid,
         ],
@@ -224,8 +223,6 @@ def main():
 # features = []
 # isatgid = random_forest.make_grid(icepts_NP, res=0.0009166)
 # k = random_forest.preprocess(icepts_NP, isatgrid, features)
-
-
 if __name__ == "__main__":
     t0 = time.time()
     main()
