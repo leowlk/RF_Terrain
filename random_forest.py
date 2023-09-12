@@ -147,7 +147,10 @@ class Distances:
         knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
-            near_h = [[self.iceptsH["h_te_interp"][h_index] for h_index in row[1:]] for row in i]
+            near_h = [
+                [self.iceptsH["h_te_interp"][h_index] for h_index in row[1:]]
+                for row in i
+            ]
             # near_h = []
             # for row in i:
             #     tmp = []
@@ -158,7 +161,10 @@ class Distances:
 
         elif pts == "gridpts":
             d, i = knn.kneighbors(self.gridpts)
-            near_h = [[self.iceptsH["h_te_interp"][h_index] for h_index in row[1:]] for row in i]
+            near_h = [
+                [self.iceptsH["h_te_interp"][h_index] for h_index in row[1:]]
+                for row in i
+            ]
             # near_h = []
             # for row in i:
             #     tmp = []
@@ -173,7 +179,7 @@ class Distances:
         nearest_h_df = pd.DataFrame(near_h)
         nearest_h_df.columns = "nearest_height_" + nearest_h_df.columns.astype(str)
         return nearest_h_df
-    
+
     def angle_to(self, pts="icepts"):
         knn = NearestNeighbors(n_neighbors=10, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
@@ -217,18 +223,17 @@ class Distances:
         else:
             print("Invalid points specified.")
             return None
-        
+
         angle_df = pd.DataFrame(near_angl)
         angle_df.columns = "angle_btwn_" + angle_df.columns.astype(str)
         return angle_df
-    
 
     def relativeh_to(self, pts="icepts"):
-        knn = NearestNeighbors(n_neighbors=100, algorithm="ball_tree").fit(self.icepts)        
+        knn = NearestNeighbors(n_neighbors=100, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
             relative_h_list = []
-            for row in i:            
+            for row in i:
                 pt_0 = self.iceptsH.iloc[row[0]].to_numpy()
                 pt_rest = row[1:]
                 _tmp = []
@@ -237,11 +242,11 @@ class Distances:
                     diff = pt_r - pt_0
                     _tmp.append(diff[2])
                 relative_h_list.append(_tmp)
-        
+
         elif pts == "gridpts":
             d, i = knn.kneighbors(self.gridpts)
             relative_h_list = []
-            for row in i:            
+            for row in i:
                 pt_0 = self.iceptsH.iloc[row[0]].to_numpy()
                 pt_rest = row[1:]
                 _tmp = []
@@ -257,7 +262,6 @@ class Distances:
         relative_h_df = pd.DataFrame(relative_h_list)
         relative_h_df.columns = "relative_h_" + relative_h_df.columns.astype(str)
         return relative_h_df
-
 
 
 class Regression:
@@ -430,7 +434,7 @@ class Regression:
         # plt.legend()
         # plt.grid(True)
         # plt.show()
-        
+
         # plt.figure(figsize=(8, 6))
         # plt.scatter(self.y_ml, y_pred, alpha=0.5)
         # plt.xlabel("Observed Values")
@@ -438,7 +442,6 @@ class Regression:
         # plt.title("Scatter Plot of Predicted vs Observed Values for Random Forest Regression")
         # plt.grid(True)
         # plt.show()
-
 
         # if val_method == 'kfold'
 
@@ -449,18 +452,25 @@ class Regression:
     def save_rfmodel(self, rf_modelname):
         # save the model to disk
         joblib.dump(self.rf_model, rf_modelname)
-    
+
     def sfs_selection(self, rf_model):
         print("SFS Features Selection:")
-        sfs = SFS(rf_model, k_features=10, forward=True, floating=False, scoring='neg_mean_squared_error', cv=None)
+        sfs = SFS(
+            rf_model,
+            k_features=10,
+            forward=True,
+            floating=False,
+            scoring="neg_mean_squared_error",
+            cv=None,
+        )
         sfs = sfs.fit(self.x_ml, self.y_ml)
         selected_feature_indices = sfs.k_feature_idx_
         elected_features = self.X_train.columns[list(selected_feature_indices)]
         print(elected_features)
-        
-        fig = plot_sequential_feature_selection(sfs.get_metric_dict(), kind='std_dev')
+
+        fig = plot_sequential_feature_selection(sfs.get_metric_dict(), kind="std_dev")
         # Customize the plot (optional)
-        plt.title('Sequential Forward Selection (SFS)')
+        plt.title("Sequential Forward Selection (SFS)")
         plt.grid()
         plt.show()
         return None
@@ -521,12 +531,14 @@ def angle_to_pts(icepts, gridpts):
     else:
         return d.angle_to("gridpts")
 
+
 def relativeh_to_pts(icepts, gridpts):
     d = Distances(icepts, gridpts)
     if gridpts is icepts:
         return d.relativeh_to("icepts")
     else:
         return d.relativeh_to("gridpts")
+
 
 def regression(
     iceDF,
@@ -570,7 +582,10 @@ def use_rf_model(iceDF, gridDF, use_model=None, outname="outname.tif"):
 
     # r.rf_evaluation(Kfold)
 
+
 def _test():
     pass
+
+
 if __name__ == "__main__":
     _test()

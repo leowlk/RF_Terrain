@@ -27,7 +27,7 @@ def main():
     data = pd.read_csv(jparams["icesat_csv"])
     # remove duplicates from the dataset
     # icepts = data[data["h_te_uncertainty"] < 25].reset_index(drop=True)
-    
+
     # Points in 3D pandas dataframe
     icepts = data
     icepts_LLH = icepts[["lat", "lon", "h_te_interp"]]
@@ -130,7 +130,6 @@ def main():
     relativeh_to_ice = random_forest.relativeh_to_pts(icepts_LLH, icepts_LL)
     relativeh_to_grid = random_forest.relativeh_to_pts(icepts_LLH, gridpts_LL)
 
-
     # Normalise Interp_h column and concat into gridpts_RF
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
     icepts_RF = pd.concat(
@@ -159,17 +158,17 @@ def main():
     # correlation.dropna(axis=0, how='all', inplace=True)
     # correlation.dropna(axis=1, how='all', inplace=True)
     # # plt.matshow(correlation)
-    # plt.figure(figsize=(8, 7)) 
+    # plt.figure(figsize=(8, 7))
     # sns.heatmap(correlation, annot=False, cmap='coolwarm', vmin=-1, vmax=1,
     #             xticklabels=correlation.columns, yticklabels=correlation.columns)
     # # plt.savefig("correlation_matrix.png")
     # plt.title("Correlation Matrix")
     # plt.tight_layout()
     # plt.show()
-    
+
     # breakpoint()
     # ------------------------------
-    
+
     # ----- [4] Random Forest Mahcine Learning ----- #
     results_tif = jparams["results"]["outfile"]
     results_tif = results_tif.removesuffix(".tif")
