@@ -144,6 +144,14 @@ class Distances:
         return dist_df
 
     def height_to(self, pts="icepts"):
+        """Calculate Nearest Neighbour Height
+
+        Args:
+            pts (str, optional): _description_. Defaults to "icepts".
+
+        Returns:
+            _type_: _description_
+        """
         knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
@@ -181,6 +189,14 @@ class Distances:
         return nearest_h_df
 
     def angle_to(self, pts="icepts"):
+        """Calculate the Angle Relative to the Nearest Neighbour
+
+        Args:
+            pts (str, optional): _description_. Defaults to "icepts".
+
+        Returns:
+            _type_: _description_
+        """
         knn = NearestNeighbors(n_neighbors=10, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
@@ -229,6 +245,14 @@ class Distances:
         return angle_df
 
     def relativeh_to(self, pts="icepts"):
+        """Calculate Relative Height In Relation to Nearest Neighbour
+
+        Args:
+            pts (str, optional): _description_. Defaults to "icepts".
+
+        Returns:
+            _type_: _description_
+        """
         knn = NearestNeighbors(n_neighbors=100, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
@@ -261,8 +285,50 @@ class Distances:
 
         relative_h_df = pd.DataFrame(relative_h_list)
         relative_h_df.columns = "relative_h_" + relative_h_df.columns.astype(str)
-        return relative_h_df
+        return relative_h_df   
+    
+    def slope_to(self, pts="icepts"):
+        """Calculate Slope to nearest neighbour
 
+        Args:
+            pts (str, optional): _description_. Defaults to "icepts".
+
+        Returns:
+            _type_: _description_
+        """
+        knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(self.icepts)
+        if pts == "icepts":
+            d, i = knn.kneighbors(self.icepts)
+            slope_list = []
+            for row in i:
+                pt_0 = self.iceptsH.iloc[row[0]].to_numpy()
+                pt_rest = row[1:]
+                _tmp = []
+                for r in pt_rest:
+                    pt_r = self.iceptsH.iloc[r].to_numpy()
+                    diff = pt_r - pt_0
+                    _tmp.append(diff[2])
+                slope_list.append(_tmp)
+
+        elif pts == "gridpts":
+            d, i = knn.kneighbors(self.gridpts)
+            slope_list = []
+            for row in i:
+                pt_0 = self.iceptsH.iloc[row[0]].to_numpy()
+                pt_rest = row[1:]
+                _tmp = []
+                for r in pt_rest:
+                    pt_r = self.iceptsH.iloc[r].to_numpy()
+                    diff = pt_r - pt_0
+                    _tmp.append(diff[2])
+                slope_list.append(_tmp)
+        else:
+            print("Invalid points specified.")
+            return None
+
+        slope_df = pd.DataFrame(slope_list)
+        slope_df.columns = "slope_h_" + slope_df.columns.astype(str)
+        return slope_df
 
 class Regression:
     def __init__(self, pts_dataframe, pts_grid) -> None:
@@ -274,6 +340,11 @@ class Regression:
         self.y_test = None
 
     def test_train(self):
+        """Test-Train Split on Random Forest Regression
+
+        Returns:
+            _type_: _description_
+        """
         self.x_ml = self.df.drop(columns=["h_te_interp"])
         self.y_ml = self.df["h_te_interp"]  # Target
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
@@ -538,6 +609,14 @@ def relativeh_to_pts(icepts, gridpts):
         return d.relativeh_to("icepts")
     else:
         return d.relativeh_to("gridpts")
+
+def slope_to_pts(icepts, gridpts):
+    d = Distances(icepts, gridpts)
+    if gridpts is icepts:
+        return d.slope_to("icepts")
+    else:
+        return d.slope_to("gridpts")
+
 
 
 def regression(
