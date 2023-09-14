@@ -113,7 +113,7 @@ def normaliseScaling(feat_df, feat_labl):
     return scaled_features
 
 
-class Distances:
+class Geometry:
     def __init__(self, icepts, gridpts) -> None:
         self.icepts = icepts[["lat", "lon"]]
         self.iceptsH = icepts[["lat", "lon", "h_te_interp"]]
@@ -307,6 +307,9 @@ class Distances:
                 for r in pt_rest:
                     pt_r = self.iceptsH.iloc[r].to_numpy()
                     diff = pt_r - pt_0
+                    
+                    
+                    
                     _tmp.append(diff[2])
                 slope_list.append(_tmp)
 
@@ -469,7 +472,7 @@ class Regression:
     def xgboost_RFregression(self):
         self.test_train()
         # ----- XGBoost Regressor -----
-        xgb_rf_model = xgb.XGBRegressor(n_jobs=-1)
+        xgb_rf_model = xgb.XGBRegressor(n_jobs=-1, objective='reg:quantileerror')
 
         # [XGB] Fitting the RF Regression model to the data
         xgb_rf_model.fit(self.X_train, self.y_train)
@@ -580,7 +583,7 @@ class Regression:
 
 
 def dist_to_pts(icepts, gridpts):
-    d = Distances(icepts, gridpts)
+    d = Geometry(icepts, gridpts)
     if gridpts is icepts:
         return d.dist_to("icepts")
     else:
@@ -588,7 +591,7 @@ def dist_to_pts(icepts, gridpts):
 
 
 def height_to_pts(icepts, gridpts):
-    d = Distances(icepts, gridpts)
+    d = Geometry(icepts, gridpts)
     if gridpts is icepts:
         return d.height_to("icepts")
     else:
@@ -596,7 +599,7 @@ def height_to_pts(icepts, gridpts):
 
 
 def angle_to_pts(icepts, gridpts):
-    d = Distances(icepts, gridpts)
+    d = Geometry(icepts, gridpts)
     if gridpts is icepts:
         return d.angle_to("icepts")
     else:
@@ -604,14 +607,14 @@ def angle_to_pts(icepts, gridpts):
 
 
 def relativeh_to_pts(icepts, gridpts):
-    d = Distances(icepts, gridpts)
+    d = Geometry(icepts, gridpts)
     if gridpts is icepts:
         return d.relativeh_to("icepts")
     else:
         return d.relativeh_to("gridpts")
 
 def slope_to_pts(icepts, gridpts):
-    d = Distances(icepts, gridpts)
+    d = Geometry(icepts, gridpts)
     if gridpts is icepts:
         return d.slope_to("icepts")
     else:

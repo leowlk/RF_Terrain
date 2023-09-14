@@ -203,7 +203,7 @@ def main():
     random_forest.regression(
         icepts_RF,
         gridpts_RF,
-        mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
+        mode="xgboost",  # mode: "ranger", "sklearn", "xgboost"
         outname=results_tif + "icesat_sklearn_geometric.tif",
         save_rf_model=False,
         params={"criterion": "squared_error"},
