@@ -15,7 +15,6 @@ import multiprocessing, sys, csv, os, time
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
 def main():
     try:
         jparams = json.load(open("params_au.json"))
@@ -203,8 +202,8 @@ def main():
     random_forest.regression(
         icepts_RF,
         gridpts_RF,
-        mode="xgboost",  # mode: "ranger", "sklearn", "xgboost"
-        outname=results_tif + "icesat_sklearn_geometric.tif",
+        mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
+        outname=results_tif + "icesat_sklearn_TREEonly.tif",
         save_rf_model=False,
         params={"criterion": "squared_error"},
     )

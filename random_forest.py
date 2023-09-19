@@ -19,7 +19,6 @@ from sklearn.neighbors import NearestNeighbors
 # from sklearn.neighbors import KDTree
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
-
 # Random Forest Regressors
 from sklearn.ensemble import RandomForestRegressor  # SKLearn
 from skranger.ensemble import RangerForestRegressor  # Ranger
@@ -35,6 +34,9 @@ from sklearn.model_selection import (
 
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from mlxtend.plotting import plot_sequential_feature_selection
+
+from sklearn.feature_selection import SelectFromModel
+
 
 from sklearn.metrics import mean_squared_error, r2_score, max_error, accuracy_score
 from sklearn.inspection import permutation_importance
@@ -412,8 +414,7 @@ class Regression:
         sklearn_rf_model.fit(self.X_train, self.y_train)
 
         # ----- Print RF Tree -----
-        from sklearn import tree
-
+        # from sklearn import tree
         # print(len(sklearn_rf_model.estimators_))
         # # plt.figure(figsize=(10,10))
         # _ = tree.plot_tree(
@@ -430,7 +431,8 @@ class Regression:
         # ----- Feature Importances -----
         # self.perm_importance(sklearn_rf_model)
         self.mdi_importance(sklearn_rf_model)
-        # self.sfs_selection(sklearn_rf_model)
+        self.sfs_selection(sklearn_rf_model)
+        breakpoint()
         self.rf_evaluation(sklearn_rf_model)
         self.rf_model = sklearn_rf_model
         return sklearn_rf_model
@@ -526,12 +528,22 @@ class Regression:
     def save_rfmodel(self, rf_modelname):
         # save the model to disk
         joblib.dump(self.rf_model, rf_modelname)
+    
+    def sfm_selection(self, rf_model):
+        """Select From Model
+
+        Args:
+            rf_model (_type_): _description_
+        """
+        sfm = SelectFromModel(rf_model, threshold='mean')
+        pass
+        
 
     def sfs_selection(self, rf_model):
         print("SFS Features Selection:")
         sfs = SFS(
             rf_model,
-            k_features=10,
+            k_features=15,
             forward=True,
             floating=False,
             scoring="neg_mean_squared_error",

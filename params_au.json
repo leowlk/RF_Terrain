@@ -1,5 +1,5 @@
 {
-    "icesat_csv": "ICESAT/tasmania/tasmania.csv",
+    "icesat_csv": "ICESAT/tasmania/tasman_samples4.csv",
     "features-path": "ICESAT/tasmania/rf_features",
     "interp": {
         "resolution": 100,
