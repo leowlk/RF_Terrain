@@ -558,6 +558,7 @@ class Regression:
         # Customize the plot (optional)
         plt.title("Sequential Forward Selection (SFS)")
         plt.grid()
+        plt.savefig("ICESAT/sfs_chart.png")
         plt.show()
         return None
 
