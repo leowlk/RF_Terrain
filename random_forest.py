@@ -287,8 +287,8 @@ class Geometry:
 
         relative_h_df = pd.DataFrame(relative_h_list)
         relative_h_df.columns = "relative_h_" + relative_h_df.columns.astype(str)
-        return relative_h_df   
-    
+        return relative_h_df
+
     def slope_to(self, pts="icepts"):
         """Calculate Slope to nearest neighbour
 
@@ -309,9 +309,7 @@ class Geometry:
                 for r in pt_rest:
                     pt_r = self.iceptsH.iloc[r].to_numpy()
                     diff = pt_r - pt_0
-                    
-                    
-                    
+
                     _tmp.append(diff[2])
                 slope_list.append(_tmp)
 
@@ -334,6 +332,7 @@ class Geometry:
         slope_df = pd.DataFrame(slope_list)
         slope_df.columns = "slope_h_" + slope_df.columns.astype(str)
         return slope_df
+
 
 class Regression:
     def __init__(self, pts_dataframe, pts_grid) -> None:
@@ -474,7 +473,7 @@ class Regression:
     def xgboost_RFregression(self):
         self.test_train()
         # ----- XGBoost Regressor -----
-        xgb_rf_model = xgb.XGBRegressor(n_jobs=-1, objective='reg:quantileerror')
+        xgb_rf_model = xgb.XGBRegressor(n_jobs=-1, objective="reg:quantileerror")
 
         # [XGB] Fitting the RF Regression model to the data
         xgb_rf_model.fit(self.X_train, self.y_train)
@@ -528,16 +527,15 @@ class Regression:
     def save_rfmodel(self, rf_modelname):
         # save the model to disk
         joblib.dump(self.rf_model, rf_modelname)
-    
+
     def sfm_selection(self, rf_model):
         """Select From Model
 
         Args:
             rf_model (_type_): _description_
         """
-        sfm = SelectFromModel(rf_model, threshold='mean')
+        sfm = SelectFromModel(rf_model, threshold="mean")
         pass
-        
 
     def sfs_selection(self, rf_model):
         print("SFS Features Selection:")
@@ -560,6 +558,7 @@ class Regression:
         plt.grid()
         plt.savefig("ICESAT/sfs_chart.png")
         plt.show()
+
         return None
 
     def output_tif(self, outname):
@@ -626,13 +625,13 @@ def relativeh_to_pts(icepts, gridpts):
     else:
         return d.relativeh_to("gridpts")
 
+
 def slope_to_pts(icepts, gridpts):
     d = Geometry(icepts, gridpts)
     if gridpts is icepts:
         return d.slope_to("icepts")
     else:
         return d.slope_to("gridpts")
-
 
 
 def regression(

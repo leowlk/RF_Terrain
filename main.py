@@ -15,6 +15,7 @@ import multiprocessing, sys, csv, os, time
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 def main():
     try:
         jparams = json.load(open("params_au.json"))
@@ -22,10 +23,10 @@ def main():
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
 
-    # Filtering for based on uncertainty of < 25 meters
     data = pd.read_csv(jparams["icesat_csv"])
-    # remove duplicates from the dataset
-    # icepts = data[data["h_te_uncertainty"] < 25].reset_index(drop=True)
+
+    # Filtering for based on uncertainty of < 25 meters
+    icepts = data[data["h_te_uncertainty"] < 25].reset_index(drop=True)
 
     # Points in 3D pandas dataframe
     icepts = data
@@ -125,29 +126,34 @@ def main():
     # Inbetween Angle of Nearby Point
     angle_to_ice = random_forest.angle_to_pts(icepts_LLH, icepts_LL)
     angle_to_grid = random_forest.angle_to_pts(icepts_LLH, gridpts_LL)
-    # Slope of Nearby Points
+    # Relative Height of Nearby Points
     relativeh_to_ice = random_forest.relativeh_to_pts(icepts_LLH, icepts_LL)
     relativeh_to_grid = random_forest.relativeh_to_pts(icepts_LLH, gridpts_LL)
+    # Slope to Nearby Points
+    slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL)
+    slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL)
 
     # Normalise Interp_h column and concat into gridpts_RF
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
     icepts_RF = pd.concat(
         [
-            icepts_RF,
-            relativeh_to_ice,
-            # height_to_ice,
-            distance_to_ice,
-            angle_to_ice,
+            # icepts_RF,
+            # relativeh_to_ice,
+            # # height_to_ice,
+            # distance_to_ice,
+            # angle_to_ice,
+            slope_to_ice
         ],
         axis=1,
     )
     gridpts_RF = pd.concat(
         [
-            gridpts_RF,
-            relativeh_to_grid,
-            # height_to_grid,
-            distance_to_grid,
-            angle_to_grid,
+            # gridpts_RF,
+            # relativeh_to_grid,
+            # # height_to_grid,
+            # distance_to_grid,
+            # angle_to_grid,
+            slope_to_grid
         ],
         axis=1,
     )
