@@ -4,6 +4,7 @@ import numpy as np
 import json
 import pyproj
 import joblib
+import math
 import matplotlib.pyplot as plt
 
 # Xarray
@@ -245,6 +246,15 @@ class Geometry:
         angle_df = pd.DataFrame(near_angl)
         angle_df.columns = "angle_btwn_" + angle_df.columns.astype(str)
         return angle_df
+    
+    def transform_datafr(self, from_epsg, to_epsg, df):
+        src_crs = pyproj.CRS.from_epsg(from_epsg)  # WGS84
+        target_crs = pyproj.CRS.from_epsg(to_epsg)  # Web Mercator
+        # Create a transformer
+        transformer = pyproj.Transformer.from_crs(src_crs, target_crs, always_xy=False)
+        df['x'], df['y'] = transformer.transform(df['lat'].values, df['lon'].values)
+        return df
+
 
     def relativeh_to(self, pts="icepts"):
         """Calculate Relative Height In Relation to Nearest Neighbour
@@ -255,6 +265,7 @@ class Geometry:
         Returns:
             _type_: _description_
         """
+       
         knn = NearestNeighbors(n_neighbors=100, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
@@ -289,48 +300,72 @@ class Geometry:
         relative_h_df.columns = "relative_h_" + relative_h_df.columns.astype(str)
         return relative_h_df
 
-    def slope_to(self, pts="icepts"):
-        """Calculate Slope to nearest neighbour
+    def slope_to(self, pts="icepts", where='au'):
+        if where == 'au': epsg= 5551
+        elif where == 'nz': epsg = 2193
+        elif where == 'nl': epsg = 28992
+        elif where == 'us': epsg = 32612
+        else: epsg = 4326
+        
+        icepts_LLH_T = self.transform_datafr(4326, epsg, self.iceptsH)
+        icepts_LL_T = self.transform_datafr(4326, epsg, self.gridpts)
+        gridpts_LL_T = self.transform_datafr(4326, epsg, self.gridpts)
+        
+        gridpts_T = gridpts_LL_T[['x', 'y']]
+        icepts_T = icepts_LL_T[['x', 'y']]
+        iceptsH_T = icepts_LLH_T[['x', 'y', 'h_te_interp']]
 
-        Args:
-            pts (str, optional): _description_. Defaults to "icepts".
-
-        Returns:
-            _type_: _description_
-        """
-        knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(self.icepts)
+        knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(icepts_T)
         if pts == "icepts":
-            d, i = knn.kneighbors(self.icepts)
+            d, i = knn.kneighbors(icepts_T)
             slope_list = []
             for row in i:
-                pt_0 = self.iceptsH.iloc[row[0]].to_numpy()
+                pt_0 = iceptsH_T.iloc[row[0]].to_numpy()
                 pt_rest = row[1:]
                 _tmp = []
                 for r in pt_rest:
-                    pt_r = self.iceptsH.iloc[r].to_numpy()
-                    diff = pt_r - pt_0
+                    pt_r = iceptsH_T.iloc[r].to_numpy()
+                    slope_vector = pt_r - pt_0
+                    
+                    d_x, d_y, d_z = slope_vector
 
-                    _tmp.append(diff[2])
+                    slope_x = d_y / d_x
+                    slope_y = d_z / d_y
+                    slope_z = d_x / d_z
+                    overall_slope = math.sqrt(slope_x**2 + slope_y**2 + slope_z**2)
+                    
+                    _tmp.append(overall_slope)
+                    
                 slope_list.append(_tmp)
 
         elif pts == "gridpts":
-            d, i = knn.kneighbors(self.gridpts)
+            d, i = knn.kneighbors(gridpts_T)
             slope_list = []
             for row in i:
-                pt_0 = self.iceptsH.iloc[row[0]].to_numpy()
+                pt_0 = iceptsH_T.iloc[row[0]].to_numpy()
                 pt_rest = row[1:]
                 _tmp = []
                 for r in pt_rest:
-                    pt_r = self.iceptsH.iloc[r].to_numpy()
-                    diff = pt_r - pt_0
-                    _tmp.append(diff[2])
+                    pt_r = iceptsH_T.iloc[r].to_numpy()
+                    slope_vector = pt_r - pt_0
+                    
+                    d_x, d_y, d_z = slope_vector
+
+                    slope_x = d_y / d_x
+                    slope_y = d_z / d_y
+                    slope_z = d_x / d_z
+                    overall_slope = math.sqrt(slope_x**2 + slope_y**2 + slope_z**2)
+                        
+                    _tmp.append(overall_slope)
+                    
                 slope_list.append(_tmp)
         else:
             print("Invalid points specified.")
             return None
-
+    
         slope_df = pd.DataFrame(slope_list)
         slope_df.columns = "slope_h_" + slope_df.columns.astype(str)
+
         return slope_df
 
 
@@ -430,8 +465,7 @@ class Regression:
         # ----- Feature Importances -----
         # self.perm_importance(sklearn_rf_model)
         self.mdi_importance(sklearn_rf_model)
-        self.sfs_selection(sklearn_rf_model)
-        breakpoint()
+        # self.sfs_selection(sklearn_rf_model)
         self.rf_evaluation(sklearn_rf_model)
         self.rf_model = sklearn_rf_model
         return sklearn_rf_model
@@ -626,12 +660,12 @@ def relativeh_to_pts(icepts, gridpts):
         return d.relativeh_to("gridpts")
 
 
-def slope_to_pts(icepts, gridpts):
+def slope_to_pts(icepts, gridpts, where='au'):
     d = Geometry(icepts, gridpts)
     if gridpts is icepts:
-        return d.slope_to("icepts")
+        return d.slope_to("icepts", where='au')
     else:
-        return d.slope_to("gridpts")
+        return d.slope_to("gridpts", where='au')
 
 
 def regression(

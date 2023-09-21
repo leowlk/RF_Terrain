@@ -43,13 +43,9 @@ def main():
         epsg = 28992  # Amersfoort / RD New
     if parts[1] == "ganyon":
         epsg = 32612  # UTM Zone 12
+    if parts[1] == "tasmania":
+        epsg = 5551  # PNG
 
-    # convert distances....100m in respective epsg to ?? in
-    def transform_coordinates(src_epsg, dst_epsg, x, y):
-        src_proj = pyproj.Proj(init=f"epsg:{src_epsg}")
-        dst_proj = pyproj.Proj(init=f"epsg:{dst_epsg}")
-        lon, lat = pyproj.transform(src_proj, dst_proj, x, y)
-        return lon, lat
 
     # ----- [1] Interpolation of ICESAT-2 Points -> save as features ----- #
     interp_pipeline = []  # 'laplace','idw','tin','nni'
@@ -129,9 +125,9 @@ def main():
     # Relative Height of Nearby Points
     relativeh_to_ice = random_forest.relativeh_to_pts(icepts_LLH, icepts_LL)
     relativeh_to_grid = random_forest.relativeh_to_pts(icepts_LLH, gridpts_LL)
-    # Slope to Nearby Points
-    slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL)
-    slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL)
+    # Slope to Nearby Points    
+    slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL, where='au')
+    slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL, where='au')
 
     # Normalise Interp_h column and concat into gridpts_RF
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
@@ -157,6 +153,10 @@ def main():
         ],
         axis=1,
     )
+    
+    print(icepts_RF)
+    print(gridpts_RF)
+    breakpoint()
 
     # ----- Correlation Matrix -----
     # correlation = icepts_RF.corr(method='spearman')
