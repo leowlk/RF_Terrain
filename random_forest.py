@@ -430,10 +430,12 @@ class Regression:
 
         I.columns = ["features", "importance"]
 
-        # I["features"] = I["features"].str.extract(r"(\w+)_")
-        # I = I.groupby("features")["importance"].sum().reset_index()
-        # I.to_csv("mdi_importance.csv")
+        I["features"] = I["features"].str.extract(r"(\w+)_")
+        I2 = I.groupby("features")["importance"].sum().reset_index()
+        I.to_csv("mdi_importance.csv")
+        I2.to_csv("mdi_importance2.csv")
         print(I)
+
 
     def sklearn_RFregression(self, use_model=None, params={}):
         self.test_train()
@@ -514,6 +516,13 @@ class Regression:
         self.rf_evaluation(xgb_rf_model)
         self.rf_model = xgb_rf_model
         return xgb_rf_model
+    
+    def combine_rf_models(model1, model2, model3, X_test, y_test):
+        predictions1 = model1.predict(X_test)
+        predictions2 = model2.predict(X_test)
+        predictions3 = model3.predict(X_test)
+
+
 
     def rf_evaluation(self, rf_model):
         # Use the model to make predictions on the testing data

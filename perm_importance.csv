@@ -1,4 +1,4 @@
-,features,importance
+id,features,importance
 0,bare_earth_freq,0.0
 1,dist,2e-05
 2,esri_lulc2020_c,1e-05

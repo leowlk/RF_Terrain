@@ -1,0 +1,26 @@
+{
+    "icesat_csv": "ICESAT/nzealand/taranaki.csv",
+    "features-path": "ICESAT/nzealand/rf_features",
+    "interp": {
+        "resolution": 100,
+        "laplace": {
+            "outfile": "ICESAT/nzealand/rf_features/interp_laplace.tif"
+        },
+        "nni": {
+            "outfile": "ICESAT/nzealand/rf_features/interpNNI.tif"
+        },
+        "tin": {
+            "outfile": "ICESAT/nzealand/rf_features/interpTIN.tif"
+        },
+        "idw": {
+            "outfile": "ICESAT/nzealand/rf_features/interpIDW.tif",
+            "power": 2,
+            "n_neighbours": 10
+        }
+    },
+    "save-model": "ICESAT/nzealand/zlimburg_model.joblib",
+
+    "results": {
+        "outfile": "ICESAT/nzealand/results/zlimburg_pred.tif"
+    }
+}

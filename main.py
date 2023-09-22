@@ -18,7 +18,7 @@ import seaborn as sns
 
 def main():
     try:
-        jparams = json.load(open("params_au.json"))
+        jparams = json.load(open("params_nz.json"))
     except:
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
@@ -68,6 +68,8 @@ def main():
         if interp_method == "aidw":
             n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
             interpolation.aidw_interp(icepts_NP, res, interp_outtif, n_neighbours)
+            
+
     
     # ----- [2] Gather GEE features ----- #
     def change_projection():
@@ -135,7 +137,7 @@ def main():
         [
             icepts_RF,
             relativeh_to_ice,
-            # # height_to_ice,
+            # height_to_ice,
             distance_to_ice,
             angle_to_ice,
             # slope_to_ice
@@ -146,7 +148,7 @@ def main():
         [
             gridpts_RF,
             relativeh_to_grid,
-            # # height_to_grid,
+            # height_to_grid,
             distance_to_grid,
             angle_to_grid,
             # slope_to_grid
@@ -201,21 +203,22 @@ def main():
         },
     }
 
-    random_forest.regression(
-        icepts_RF,
-        gridpts_RF,
-        mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
-        outname=results_tif + "icesat_sklearn_icegeo1.tif",
-        save_rf_model=False,
-        params={"criterion": "squared_error"},
-    )
-
-    # random_forest.use_rf_model(
+    # random_forest.regression(
     #     icepts_RF,
     #     gridpts_RF,
-    #     use_model=None,
-    #     outname=results_tif + "_modelNL.tif",
+    #     mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
+    #     outname=results_tif + "icesat_GC.tif",
+    #     save_rf_model=True,
+    #     params={"criterion": "squared_error"},
     # )
+    
+
+    random_forest.use_rf_model(
+        icepts_RF,
+        gridpts_RF,
+        use_model='ICESAT/combined_rf.joblib',
+        outname=results_tif + "_combinedRF.tif",
+    )
 
 
 # ----- [3] Prep features data ----- #
