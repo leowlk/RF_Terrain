@@ -26,7 +26,7 @@ def main():
     data = pd.read_csv(jparams["icesat_csv"])
 
     # Filtering for based on uncertainty of < 25 meters
-    icepts = data[data["h_te_uncertainty"] < 25].reset_index(drop=True)
+    # icepts = data[data["h_te_uncertainty"] < 25].reset_index(drop=True)
 
     # Points in 3D pandas dataframe
     icepts = data
@@ -68,7 +68,7 @@ def main():
         if interp_method == "aidw":
             n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
             interpolation.aidw_interp(icepts_NP, res, interp_outtif, n_neighbours)
-
+    
     # ----- [2] Gather GEE features ----- #
     def change_projection():
         pass
@@ -126,38 +126,34 @@ def main():
     relativeh_to_ice = random_forest.relativeh_to_pts(icepts_LLH, icepts_LL)
     relativeh_to_grid = random_forest.relativeh_to_pts(icepts_LLH, gridpts_LL)
     # Slope to Nearby Points    
-    slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL, where='au')
-    slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL, where='au')
+    # slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL, where='au')
+    # slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL, where='au')
 
     # Normalise Interp_h column and concat into gridpts_RF
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
     icepts_RF = pd.concat(
         [
-            # icepts_RF,
-            # relativeh_to_ice,
+            icepts_RF,
+            relativeh_to_ice,
             # # height_to_ice,
-            # distance_to_ice,
-            # angle_to_ice,
-            slope_to_ice
+            distance_to_ice,
+            angle_to_ice,
+            # slope_to_ice
         ],
         axis=1,
     )
     gridpts_RF = pd.concat(
         [
-            # gridpts_RF,
-            # relativeh_to_grid,
+            gridpts_RF,
+            relativeh_to_grid,
             # # height_to_grid,
-            # distance_to_grid,
-            # angle_to_grid,
-            slope_to_grid
+            distance_to_grid,
+            angle_to_grid,
+            # slope_to_grid
         ],
         axis=1,
     )
     
-    print(icepts_RF)
-    print(gridpts_RF)
-    breakpoint()
-
     # ----- Correlation Matrix -----
     # correlation = icepts_RF.corr(method='spearman')
     # correlation.dropna(axis=0, how='all', inplace=True)
@@ -209,7 +205,7 @@ def main():
         icepts_RF,
         gridpts_RF,
         mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
-        outname=results_tif + "icesat_sklearn_TREEonly.tif",
+        outname=results_tif + "icesat_sklearn_icegeo1.tif",
         save_rf_model=False,
         params={"criterion": "squared_error"},
     )

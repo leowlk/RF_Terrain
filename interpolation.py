@@ -47,7 +47,7 @@ class Interp:
         elif res == 500:
             self.resolution = 0.0044444
         else:
-            self.resolution = 100
+            self.resolution = 0.0019444
 
     def projected_res(self, epsg=4326):
         trans = Transformer.from_crs("EPSG:4326", "EPSG:2193", always_xy=True)
@@ -93,13 +93,12 @@ class Interp:
 
         self.tin_p = pd.DataFrame(tin_data, columns=["lat", "lon", "interp_h"])
 
-        tin_h = xr.Dataset.from_dataframe(self.tin_p.set_index(["lon", "lat"]))
+        tin_h = xr.Dataset.from_dataframe(self.tin_p.set_index(["lat", "lon"]))
         return tin_h
 
     def laplace(self):
         self.startin()
         grid_raster = self.make_grid(self.pts_in_3d)
-
         lp_data = []
         for n in grid_raster:
             if self.dt.is_inside_convex_hull(n[0], n[1]) == True:
@@ -109,7 +108,7 @@ class Interp:
                 data = [n[0], n[1], np.nan]
                 lp_data.append(data)
         self.lp_p = pd.DataFrame(lp_data, columns=["lat", "lon", "interp_h"])
-        lp_h = xr.Dataset.from_dataframe(self.lp_p.set_index(["lon", "lat"]))
+        lp_h = xr.Dataset.from_dataframe(self.lp_p.set_index(["lat", "lon"]))
         return lp_h
 
     def nni(self):
@@ -118,8 +117,9 @@ class Interp:
         nni_data = []
         for n in grid_raster:
             if self.dt.is_inside_convex_hull(n[0], n[1]) == True:
+                # data = [n[0], n[1], self.dt.interpolate_nni(n[0], n[1])]
                 try:
-                    data = [n[0], n[1], self.dt.interpolate_nni([n[0], n[1]])]
+                    data = [n[0], n[1], self.dt.interpolate_nni(n[0], n[1])]
                 except:
                     data = [n[0], n[1], np.nan]
                 # except:
@@ -131,7 +131,7 @@ class Interp:
                 nni_data.append(data)
 
         self.nni_p = pd.DataFrame(nni_data, columns=["lat", "lon", "interp_h"])
-        nni_h = xr.Dataset.from_dataframe(self.nni_p.set_index(["lon", "lat"]))
+        nni_h = xr.Dataset.from_dataframe(self.nni_p.set_index(["lat", "lon"]))
         return nni_h
 
     def nn(self):
@@ -172,7 +172,7 @@ class Interp:
             idw_data.append(data)
 
         self.idw_p = pd.DataFrame(idw_data, columns=["lat", "lon", "interp_h"])
-        idw_h = xr.Dataset.from_dataframe(self.idw_p.set_index(["lon", "lat"]))
+        idw_h = xr.Dataset.from_dataframe(self.idw_p.set_index(["lat", "lon"]))
         return idw_h
 
     def calc_angle_between(self, P, p1, p2):
@@ -251,16 +251,16 @@ class Interp:
 
     def output(self, x_arr, *output_file):
         # +++[ Drop np.nan columns/rows and inputunate data (filling nan values) ]+++
-        # x_arr = x_arr.dropna("lon", how="all")
-        # imputer = KNNImputer(n_neighbors=30)
-        # tin_arr = imputer.fit_transform(x_arr["interp_h"].values)
-        # tin_xarr = xr.DataArray(tin_arr, dims=("lat", "lon"))
-        # x_arr["interp_h"] = tin_xarr
+        x_arr = x_arr.dropna("lon", how="all")
+        imputer = KNNImputer(n_neighbors=10)
+        tin_arr = imputer.fit_transform(x_arr["interp_h"].values)
+        tin_xarr = xr.DataArray(tin_arr, dims=("lat", "lon"))
+        x_arr["interp_h"] = tin_xarr
         # ++++++++++++++++++++++++++++
-
-        x_arr.rio.set_crs("epsg:5551")
-        x_arr.rio.set_spatial_dims("lat", "lon")
+        x_arr.rio.set_crs("epsg:4326")
+        x_arr.rio.set_spatial_dims("lon", "lat")
         x_arr.rio.to_raster(*output_file, driver="GTiff")
+        print("DONE!")
 
 
 def laplace_interp(data, res, outname):

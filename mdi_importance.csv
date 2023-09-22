@@ -1,13 +1,4 @@
 ,features,importance
-0,angle_btwn,0.15426
-1,bare_earth_freq,1e-05
-2,dist_buffer,0.01834
-3,esri_lulc2020_c,0.03957
-4,geomorhpon_c,0.00014000000000000001
-5,gl_surface_water_c,0.0
-6,global_crops_c,4e-05
-7,global_temp,0.03534
-8,landsat_tree_caopy_cover,0.03203
-9,ndvi2,0.06212
-10,relative_h,0.64292
-11,world_settlement_c,0.0
+0,interp,0.00033
+1,interp200,0.00015000000000000001
+2,interpSamples,0.99949

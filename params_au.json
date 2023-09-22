@@ -4,19 +4,21 @@
     "interp": {
         "resolution": 100,
         "laplace": {
-            "outfile": "ICESAT/tasmania/rf_features/interp_laplace_h.tif"
+            "outfile": "ICESAT/tasmania/interpolation/interpSamples_laplace.tif"
         },
-        "aidw": {
-            "outfile": "ICESAT/ta msmania/rf_features/interp_aidw_h.tif",
-            "n_neighbours": 100
+        "nni": {
+            "outfile": "ICESAT/tasmania/interpolation/interpSamples_nni.tif"
+        },
+        "tin": {
+            "outfile": "ICESAT/tasmania/interpolation/interpSamples_tin.tif"
         },
         "idw": {
-            "outfile": "ICESAT/tasmania/rf_features/interp_idw_h.tif",
+            "outfile": "ICESAT/tasmania/interpolation/interpSamples_idw.tif",
             "power": 2,
             "n_neighbours": 100
         },
         "nn": {
-            "outfile": "ICESAT/tasmania/rf_features/interp_nn_h.tif"
+            "outfile": "ICESAT/tasmania/interpolation/interpSamples_n.tif"
         }
     },
     "save-model": "ICESAT/tasmania/tasmania_model.joblib",

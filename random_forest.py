@@ -34,7 +34,7 @@ from sklearn.model_selection import (
 )
 
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
-from mlxtend.plotting import plot_sequential_feature_selection
+from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs
 
 from sklearn.feature_selection import SelectFromModel
 
@@ -430,9 +430,9 @@ class Regression:
 
         I.columns = ["features", "importance"]
 
-        I["features"] = I["features"].str.extract(r"(\w+)_")
-        I = I.groupby("features")["importance"].sum().reset_index()
-        I.to_csv("mdi_importance.csv")
+        # I["features"] = I["features"].str.extract(r"(\w+)_")
+        # I = I.groupby("features")["importance"].sum().reset_index()
+        # I.to_csv("mdi_importance.csv")
         print(I)
 
     def sklearn_RFregression(self, use_model=None, params={}):
@@ -575,23 +575,29 @@ class Regression:
         print("SFS Features Selection:")
         sfs = SFS(
             rf_model,
-            k_features=15,
-            forward=True,
+            k_features="best",
+            forward=False,
             floating=False,
             scoring="neg_mean_squared_error",
-            cv=None,
+            cv=5,
+            n_jobs=-1
         )
         sfs = sfs.fit(self.x_ml, self.y_ml)
         selected_feature_indices = sfs.k_feature_idx_
         elected_features = self.X_train.columns[list(selected_feature_indices)]
+        
         print(elected_features)
+    
+        fig = plot_sfs(sfs.get_metric_dict(confidence_interval=0.95), kind="std_dev")
 
-        fig = plot_sequential_feature_selection(sfs.get_metric_dict(), kind="std_dev")
         # Customize the plot (optional)
         plt.title("Sequential Forward Selection (SFS)")
         plt.grid()
         plt.savefig("ICESAT/sfs_chart.png")
         plt.show()
+        
+        print(sfs.k_feature_idx_)
+        print(sfs.k_feature_names_)
 
         return None
 
