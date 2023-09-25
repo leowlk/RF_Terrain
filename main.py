@@ -18,7 +18,7 @@ import seaborn as sns
 
 def main():
     try:
-        jparams = json.load(open("params_nz.json"))
+        jparams = json.load(open("params_au.json"))
     except:
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
@@ -128,8 +128,8 @@ def main():
     relativeh_to_ice = random_forest.relativeh_to_pts(icepts_LLH, icepts_LL)
     relativeh_to_grid = random_forest.relativeh_to_pts(icepts_LLH, gridpts_LL)
     # Slope to Nearby Points    
-    # slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL, where='au')
-    # slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL, where='au')
+    slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL, where='au')
+    slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL, where='au')
 
     # Normalise Interp_h column and concat into gridpts_RF
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
@@ -140,7 +140,7 @@ def main():
             # height_to_ice,
             distance_to_ice,
             angle_to_ice,
-            # slope_to_ice
+            slope_to_ice
         ],
         axis=1,
     )
@@ -151,10 +151,11 @@ def main():
             # height_to_grid,
             distance_to_grid,
             angle_to_grid,
-            # slope_to_grid
+            slope_to_grid
         ],
         axis=1,
     )
+    
     
     # ----- Correlation Matrix -----
     # correlation = icepts_RF.corr(method='spearman')
@@ -203,22 +204,22 @@ def main():
         },
     }
 
-    # random_forest.regression(
-    #     icepts_RF,
-    #     gridpts_RF,
-    #     mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
-    #     outname=results_tif + "icesat_GC.tif",
-    #     save_rf_model=True,
-    #     params={"criterion": "squared_error"},
-    # )
-    
-
-    random_forest.use_rf_model(
+    random_forest.regression(
         icepts_RF,
         gridpts_RF,
-        use_model='ICESAT/combined_rf.joblib',
-        outname=results_tif + "_combinedRF.tif",
+        mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
+        outname=results_tif + "icesat_GC.tif",
+        save_rf_model=True,
+        params={"criterion": "squared_error"},
     )
+    
+
+    # random_forest.use_rf_model(
+    #     icepts_RF,
+    #     gridpts_RF,
+    #     use_model='ICESAT/combined_rf.joblib',
+    #     outname=results_tif + "_combinedRF.tif",
+    # )
 
 
 # ----- [3] Prep features data ----- #

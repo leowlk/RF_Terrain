@@ -308,34 +308,27 @@ class Geometry:
         else: epsg = 4326
         
         icepts_LLH_T = self.transform_datafr(4326, epsg, self.iceptsH)
-        icepts_LL_T = self.transform_datafr(4326, epsg, self.gridpts)
+        icepts_LL_T = self.transform_datafr(4326, epsg, self.icepts)
         gridpts_LL_T = self.transform_datafr(4326, epsg, self.gridpts)
         
         gridpts_T = gridpts_LL_T[['x', 'y']]
         icepts_T = icepts_LL_T[['x', 'y']]
         iceptsH_T = icepts_LLH_T[['x', 'y', 'h_te_interp']]
-
-        knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(icepts_T)
+                
+        knn = NearestNeighbors(n_neighbors=120, algorithm="ball_tree").fit(icepts_T)
         if pts == "icepts":
             d, i = knn.kneighbors(icepts_T)
             slope_list = []
             for row in i:
                 pt_0 = iceptsH_T.iloc[row[0]].to_numpy()
-                pt_rest = row[1:]
+                pt_rest = row[50:]
                 _tmp = []
                 for r in pt_rest:
                     pt_r = iceptsH_T.iloc[r].to_numpy()
                     slope_vector = pt_r - pt_0
-                    
                     d_x, d_y, d_z = slope_vector
-
-                    slope_x = d_y / d_x
-                    slope_y = d_z / d_y
-                    slope_z = d_x / d_z
-                    overall_slope = math.sqrt(slope_x**2 + slope_y**2 + slope_z**2)
-                    
+                    overall_slope = d_z / math.sqrt(d_x**2 + d_y**2 + d_z**2) 
                     _tmp.append(overall_slope)
-                    
                 slope_list.append(_tmp)
 
         elif pts == "gridpts":
@@ -343,21 +336,14 @@ class Geometry:
             slope_list = []
             for row in i:
                 pt_0 = iceptsH_T.iloc[row[0]].to_numpy()
-                pt_rest = row[1:]
+                pt_rest = row[50:]
                 _tmp = []
                 for r in pt_rest:
                     pt_r = iceptsH_T.iloc[r].to_numpy()
                     slope_vector = pt_r - pt_0
-                    
                     d_x, d_y, d_z = slope_vector
-
-                    slope_x = d_y / d_x
-                    slope_y = d_z / d_y
-                    slope_z = d_x / d_z
-                    overall_slope = math.sqrt(slope_x**2 + slope_y**2 + slope_z**2)
-                        
+                    overall_slope = d_z / math.sqrt(d_x**2 + d_y**2 + d_z**2)
                     _tmp.append(overall_slope)
-                    
                 slope_list.append(_tmp)
         else:
             print("Invalid points specified.")
@@ -365,7 +351,6 @@ class Geometry:
     
         slope_df = pd.DataFrame(slope_list)
         slope_df.columns = "slope_h_" + slope_df.columns.astype(str)
-
         return slope_df
 
 
