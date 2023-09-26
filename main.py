@@ -15,10 +15,10 @@ import multiprocessing, sys, csv, os, time
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
 def main():
     try:
         jparams = json.load(open("params_au.json"))
+        where = "au"
     except:
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
@@ -46,7 +46,6 @@ def main():
     if parts[1] == "tasmania":
         epsg = 5551  # PNG
 
-
     # ----- [1] Interpolation of ICESAT-2 Points -> save as features ----- #
     interp_pipeline = []  # 'laplace','idw','tin','nni'
     icepts_NP = icepts_LLH.to_numpy()  # Convert pts from pandas to numpy
@@ -68,9 +67,7 @@ def main():
         if interp_method == "aidw":
             n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
             interpolation.aidw_interp(icepts_NP, res, interp_outtif, n_neighbours)
-            
 
-    
     # ----- [2] Gather GEE features ----- #
     def change_projection():
         pass
@@ -115,48 +112,52 @@ def main():
     icepts_RF = pd.concat([icepts_LLH, icepts_RF], axis=1)
     gridpts_RF = pd.concat([gridpts_LL, gridpts_RF], axis=1)
 
+
     # Buffer Distance to Points
     distance_to_ice = random_forest.dist_to_pts(icepts_LLH, icepts_LL)
     distance_to_grid = random_forest.dist_to_pts(icepts_LLH, gridpts_LL)
     # Height of Nearby Points
-    height_to_ice = random_forest.height_to_pts(icepts_LLH, icepts_LL)
-    height_to_grid = random_forest.height_to_pts(icepts_LLH, gridpts_LL)
+    # height_to_ice = random_forest.height_to_pts(icepts_LLH, icepts_LL)
+    # height_to_grid = random_forest.height_to_pts(icepts_LLH, gridpts_LL)
     # Inbetween Angle of Nearby Point
     angle_to_ice = random_forest.angle_to_pts(icepts_LLH, icepts_LL)
     angle_to_grid = random_forest.angle_to_pts(icepts_LLH, gridpts_LL)
     # Relative Height of Nearby Points
     relativeh_to_ice = random_forest.relativeh_to_pts(icepts_LLH, icepts_LL)
     relativeh_to_grid = random_forest.relativeh_to_pts(icepts_LLH, gridpts_LL)
-    # Slope to Nearby Points    
-    slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL, where='au')
-    slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL, where='au')
-
+    # Slope to Nearby Points
+    slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL, where)
+    slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL, where)
+    # Distance to centroid
+    # centroid_to_ice = random_forest.centroid_to_pts(icepts_LLH, icepts_LL)
+    # centroid_to_grid = random_forest.centroid_to_pts(icepts_LLH, gridpts_LL)
+    
     # Normalise Interp_h column and concat into gridpts_RF
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
     icepts_RF = pd.concat(
         [
             icepts_RF,
-            relativeh_to_ice,
-            # height_to_ice,
-            distance_to_ice,
-            angle_to_ice,
-            slope_to_ice
+            # relativeh_to_ice,
+            # # height_to_ice,
+            # distance_to_ice,
+            # angle_to_ice,
+            # slope_to_ice
+            # centroid_to_ice,
         ],
         axis=1,
     )
     gridpts_RF = pd.concat(
         [
             gridpts_RF,
-            relativeh_to_grid,
-            # height_to_grid,
-            distance_to_grid,
-            angle_to_grid,
-            slope_to_grid
+            # relativeh_to_grid,
+            # # height_to_grid,
+            # distance_to_grid,
+            # angle_to_grid,
+            # slope_to_grid
+            # centroid_to_grid,
         ],
         axis=1,
     )
-    
-    
     # ----- Correlation Matrix -----
     # correlation = icepts_RF.corr(method='spearman')
     # correlation.dropna(axis=0, how='all', inplace=True)
@@ -208,11 +209,10 @@ def main():
         icepts_RF,
         gridpts_RF,
         mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
-        outname=results_tif + "icesat_GC.tif",
+        outname=results_tif + "tasman_samples4.tif",
         save_rf_model=True,
         params={"criterion": "squared_error"},
     )
-    
 
     # random_forest.use_rf_model(
     #     icepts_RF,

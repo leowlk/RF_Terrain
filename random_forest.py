@@ -41,6 +41,8 @@ from sklearn.feature_selection import SelectFromModel
 
 from sklearn.metrics import mean_squared_error, r2_score, max_error, accuracy_score
 from sklearn.inspection import permutation_importance
+from sklearn.model_selection import validation_curve
+
 
 import os, sys
 
@@ -192,14 +194,6 @@ class Geometry:
         return nearest_h_df
 
     def angle_to(self, pts="icepts"):
-        """Calculate the Angle Relative to the Nearest Neighbour
-
-        Args:
-            pts (str, optional): _description_. Defaults to "icepts".
-
-        Returns:
-            _type_: _description_
-        """
         knn = NearestNeighbors(n_neighbors=10, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
@@ -246,26 +240,16 @@ class Geometry:
         angle_df = pd.DataFrame(near_angl)
         angle_df.columns = "angle_btwn_" + angle_df.columns.astype(str)
         return angle_df
-    
+
     def transform_datafr(self, from_epsg, to_epsg, df):
         src_crs = pyproj.CRS.from_epsg(from_epsg)  # WGS84
         target_crs = pyproj.CRS.from_epsg(to_epsg)  # Web Mercator
         # Create a transformer
         transformer = pyproj.Transformer.from_crs(src_crs, target_crs, always_xy=False)
-        df['x'], df['y'] = transformer.transform(df['lat'].values, df['lon'].values)
+        df["x"], df["y"] = transformer.transform(df["lat"].values, df["lon"].values)
         return df
 
-
     def relativeh_to(self, pts="icepts"):
-        """Calculate Relative Height In Relation to Nearest Neighbour
-
-        Args:
-            pts (str, optional): _description_. Defaults to "icepts".
-
-        Returns:
-            _type_: _description_
-        """
-       
         knn = NearestNeighbors(n_neighbors=100, algorithm="ball_tree").fit(self.icepts)
         if pts == "icepts":
             d, i = knn.kneighbors(self.icepts)
@@ -300,21 +284,26 @@ class Geometry:
         relative_h_df.columns = "relative_h_" + relative_h_df.columns.astype(str)
         return relative_h_df
 
-    def slope_to(self, pts="icepts", where='au'):
-        if where == 'au': epsg= 5551
-        elif where == 'nz': epsg = 2193
-        elif where == 'nl': epsg = 28992
-        elif where == 'us': epsg = 32612
-        else: epsg = 4326
-        
+    def slope_to(self, pts="icepts", where="au"):
+        if where == "au":
+            epsg = 5551
+        elif where == "nz":
+            epsg = 2193
+        elif where == "nl":
+            epsg = 28992
+        elif where == "us":
+            epsg = 32612
+        else:
+            epsg = 4326
+
         icepts_LLH_T = self.transform_datafr(4326, epsg, self.iceptsH)
         icepts_LL_T = self.transform_datafr(4326, epsg, self.icepts)
         gridpts_LL_T = self.transform_datafr(4326, epsg, self.gridpts)
-        
-        gridpts_T = gridpts_LL_T[['x', 'y']]
-        icepts_T = icepts_LL_T[['x', 'y']]
-        iceptsH_T = icepts_LLH_T[['x', 'y', 'h_te_interp']]
-                
+
+        gridpts_T = gridpts_LL_T[["x", "y"]]
+        icepts_T = icepts_LL_T[["x", "y"]]
+        iceptsH_T = icepts_LLH_T[["x", "y", "h_te_interp"]]
+
         knn = NearestNeighbors(n_neighbors=120, algorithm="ball_tree").fit(icepts_T)
         if pts == "icepts":
             d, i = knn.kneighbors(icepts_T)
@@ -327,7 +316,7 @@ class Geometry:
                     pt_r = iceptsH_T.iloc[r].to_numpy()
                     slope_vector = pt_r - pt_0
                     d_x, d_y, d_z = slope_vector
-                    overall_slope = d_z / math.sqrt(d_x**2 + d_y**2 + d_z**2) 
+                    overall_slope = d_z / math.sqrt(d_x**2 + d_y**2 + d_z**2)
                     _tmp.append(overall_slope)
                 slope_list.append(_tmp)
 
@@ -348,10 +337,35 @@ class Geometry:
         else:
             print("Invalid points specified.")
             return None
-    
+
         slope_df = pd.DataFrame(slope_list)
         slope_df.columns = "slope_h_" + slope_df.columns.astype(str)
         return slope_df
+    
+    def centroid_to(self, pts="icepts"):
+        lat = self.icepts[['lat']].to_numpy()
+        lon = self.icepts[['lon']].to_numpy()
+        c_lat = np.mean(lat)
+        c_lon = np.mean(lon)
+        centroid = np.array([c_lat, c_lon])
+        
+        knn = NearestNeighbors(algorithm="ball_tree").fit(self.icepts)
+        breakpoint()
+
+        if pts == "icepts":
+            d, i = knn.kneighbors([centroid])
+            print(d)
+        elif pts == "gridpts":
+            d, i = knn.kneighbors([centroid])
+            print(d)
+
+        else:
+            print("Invalid points specified.")
+            return None
+        # centroid_df = pd.DataFrame(d)
+        # centroid_df.columns = "centroid_" + centroid_df.columns.astype(str)
+        # print(centroid_df)
+        # return centroid_df
 
 
 class Regression:
@@ -420,6 +434,60 @@ class Regression:
         I.to_csv("mdi_importance.csv")
         I2.to_csv("mdi_importance2.csv")
         print(I)
+        
+    # -------- Grid Search CV --------
+    def grid_search(self):
+        search_space = {
+            "n_estimators": [100, 200, 500],
+            "max_depth": [10, 20, 30],
+            "min_samples_split": [2, 5, 10],
+            "n_jobfs": [-1],
+        }
+
+        # make a GridSearchCV object
+        GS = GridSearchCV(
+            estimator=self.rf_model,
+            param_grid=search_space,
+            # sklearn.metrics.SCORERS.keys()
+            scoring=["r2", "neg_root_mean_squared_error"],
+            refit="r2",
+            cv=5,
+            verbose=4,
+        )
+        GS.fit(self.X_train, self.y_train)
+        print(GS.best_estimator_)
+        print(GS.best_params_)
+        print(GS.best_score_)
+    
+    # ------ Validation Score -------
+    # def validation_score(self):
+    #     param_range = [10, 50, 100, 150, 200]
+    #     train_scores, valid_scores = validation_curve(
+    #         RandomForestRegressor(),
+    #         self.X_train, self.y_train,
+    #         param_name="n_estimators",
+    #         param_range=param_range,
+    #         cv=5,  # Cross-validation folds
+    #         scoring="neg_mean_squared_error"  # Use an appropriate scoring metric
+    #     )
+    #     train_mean = -np.mean(train_scores, axis=1)
+    #     train_std = np.std(train_scores, axis=1)
+    #     valid_mean = -np.mean(valid_scores, axis=1)
+    #     valid_std = np.std(valid_scores, axis=1)
+        
+    #     plt.figure(figsize=(10, 6))
+    #     plt.plot(param_range, train_mean, label="Training score", color="blue", marker="o")
+    #     plt.fill_between(param_range, train_mean - train_std, train_mean + train_std, alpha=0.2, color="blue")
+
+    #     plt.plot(param_range, valid_mean, label="Cross-validation score", color="green", marker="o")
+    #     plt.fill_between(param_range, valid_mean - valid_std, valid_mean + valid_std, alpha=0.2, color="green")
+
+    #     plt.title("Validation Curve for Random Forest")
+    #     plt.xlabel("Number of Estimators")
+    #     plt.ylabel("Negative Mean Squared Error")
+    #     plt.legend(loc="best")
+    #     plt.grid()
+    #     plt.show()
 
 
     def sklearn_RFregression(self, use_model=None, params={}):
@@ -454,32 +522,10 @@ class Regression:
         self.mdi_importance(sklearn_rf_model)
         # self.sfs_selection(sklearn_rf_model)
         self.rf_evaluation(sklearn_rf_model)
+        self.validation_score()
         self.rf_model = sklearn_rf_model
         return sklearn_rf_model
 
-    # -------- Grid Search CV --------
-    def grid_search(self):
-        search_space = {
-            "n_estimators": [100, 200, 500],
-            "max_depth": [10, 20, 30],
-            "min_samples_split": [2, 5, 10],
-            "n_jobfs": [-1],
-        }
-
-        # make a GridSearchCV object
-        GS = GridSearchCV(
-            estimator=self.rf_model,
-            param_grid=search_space,
-            # sklearn.metrics.SCORERS.keys()
-            scoring=["r2", "neg_root_mean_squared_error"],
-            refit="r2",
-            cv=5,
-            verbose=4,
-        )
-        GS.fit(self.X_train, self.y_train)
-        print(GS.best_estimator_)
-        print(GS.best_params_)
-        print(GS.best_score_)
 
     def ranger_RFregression(self):
         self.test_train()
@@ -501,13 +547,11 @@ class Regression:
         self.rf_evaluation(xgb_rf_model)
         self.rf_model = xgb_rf_model
         return xgb_rf_model
-    
+
     def combine_rf_models(model1, model2, model3, X_test, y_test):
         predictions1 = model1.predict(X_test)
         predictions2 = model2.predict(X_test)
         predictions3 = model3.predict(X_test)
-
-
 
     def rf_evaluation(self, rf_model):
         # Use the model to make predictions on the testing data
@@ -527,6 +571,7 @@ class Regression:
         print(f"RF test accuracy: {rf_test_acc:.3f}")
         print("--------------------------")
 
+        # # --- Plot Residuals ----
         # residuals = self.y_test - y_pred
         # plt.figure(figsize=(8, 6))
         # plt.scatter(y_pred, residuals, c="blue", marker="o", label="Residuals")
@@ -537,20 +582,18 @@ class Regression:
         # plt.legend()
         # plt.grid(True)
         # plt.show()
+        
+        # --- Plot Pred v Ground ----
+        plt.scatter(self.y_test, y_pred, c='b', marker='.', label='Ground Truth vs. Predicted')
+        # Add labels and title
+        plt.xlabel('Ground Truth')
+        plt.ylabel('Predicted Values')
+        plt.title('Scatter Plot of Ground Truth vs. Predicted')
+        # # Add a 45-degree reference line (optional)
+        # plt.plot([np.min(cropped_ground_truth), np.max(cropped_ground_truth)], [np.min(cropped_ground_truth), np.max(cropped_ground_truth)], 'r--', label='45-degree line')
+        plt.legend()
+        plt.show()
 
-        # plt.figure(figsize=(8, 6))
-        # plt.scatter(self.y_ml, y_pred, alpha=0.5)
-        # plt.xlabel("Observed Values")
-        # plt.ylabel("Predicted Values")
-        # plt.title("Scatter Plot of Predicted vs Observed Values for Random Forest Regression")
-        # plt.grid(True)
-        # plt.show()
-
-        # if val_method == 'kfold'
-
-        # print(rf_model.feature_importances_)
-        # print(rf_model.n_features_in_)
-        # print(rf_model.feature_names_in_)
 
     def save_rfmodel(self, rf_modelname):
         # save the model to disk
@@ -574,14 +617,14 @@ class Regression:
             floating=False,
             scoring="neg_mean_squared_error",
             cv=5,
-            n_jobs=-1
+            n_jobs=-1,
         )
         sfs = sfs.fit(self.x_ml, self.y_ml)
         selected_feature_indices = sfs.k_feature_idx_
         elected_features = self.X_train.columns[list(selected_feature_indices)]
-        
+
         print(elected_features)
-    
+
         fig = plot_sfs(sfs.get_metric_dict(confidence_interval=0.95), kind="std_dev")
 
         # Customize the plot (optional)
@@ -589,7 +632,7 @@ class Regression:
         plt.grid()
         plt.savefig("ICESAT/sfs_chart.png")
         plt.show()
-        
+
         print(sfs.k_feature_idx_)
         print(sfs.k_feature_names_)
 
@@ -617,14 +660,12 @@ class Regression:
     #         for train_index,test_index in kFold.split(X):
     #             print("Train Index: ", train_index, "\n")
     #             print("Test Index: ", test_index)
-
     #             X_train, X_test, y_train, y_test = X[train_index], X[test_index], y[train_index], y[test_index]
     #             knn.fit(X_train, y_train)
     #             scores.append(knn.score(X_test, y_test))
     #             knn.fit(X_train, y_train)
     #             scores.append(knn.score(X_test,y_test))
     #             print(np.mean(scores))
-    #             0.9393939393939394
     #             cross_val_score(knn, X, y, cv=10)
 
 
@@ -634,7 +675,6 @@ def dist_to_pts(icepts, gridpts):
         return d.dist_to("icepts")
     else:
         return d.dist_to("gridpts")
-
 
 def height_to_pts(icepts, gridpts):
     d = Geometry(icepts, gridpts)
@@ -660,12 +700,19 @@ def relativeh_to_pts(icepts, gridpts):
         return d.relativeh_to("gridpts")
 
 
-def slope_to_pts(icepts, gridpts, where='au'):
+def slope_to_pts(icepts, gridpts, where="au"):
     d = Geometry(icepts, gridpts)
     if gridpts is icepts:
-        return d.slope_to("icepts", where='au')
+        return d.slope_to("icepts", where)
     else:
-        return d.slope_to("gridpts", where='au')
+        return d.slope_to("gridpts", where)
+
+def centroid_to_pts(icepts, gridpts):
+    d = Geometry(icepts, gridpts)
+    if gridpts is icepts:
+        return d.centroid_to("icepts")
+    else:
+        return d.centroid_to("gridpts")
 
 
 def regression(
