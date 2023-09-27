@@ -6,11 +6,11 @@ import pyproj
 import joblib
 import math
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 # Xarray
 import xarray as xr
 import rioxarray
-
 
 # Scipy Spatial
 from scipy.spatial import distance_matrix, KDTree, distance
@@ -31,6 +31,9 @@ from sklearn.model_selection import (
     cross_val_score,
     GridSearchCV,
     KFold,
+    LearningCurveDisplay,
+    learning_curve,
+    validation_curve
 )
 
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
@@ -38,10 +41,8 @@ from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs
 
 from sklearn.feature_selection import SelectFromModel
 
-
 from sklearn.metrics import mean_squared_error, r2_score, max_error, accuracy_score
 from sklearn.inspection import permutation_importance
-from sklearn.model_selection import validation_curve
 
 
 import os, sys
@@ -460,14 +461,44 @@ class Regression:
         print(GS.best_score_)
     
     # ------ Validation Score -------
-    # def validation_score(self):
-    #     param_range = [10, 50, 100, 150, 200]
-    #     train_scores, valid_scores = validation_curve(
+    def validation_score(self):
+        sns.set_context("notebook")
+        param_range = [10, 50, 100, 150, 200]
+        train_scores, valid_scores = validation_curve(
+            self.rf_model,
+            self.X_train, self.y_train,
+            param_name="n_estimators",
+            param_range=param_range,
+            cv=5,  # Cross-validation folds
+            scoring=None,  # Use an appropriate scoring metric
+            n_jobs=-1
+        )
+        train_mean = -np.mean(train_scores, axis=1)
+        train_std = np.std(train_scores, axis=1)
+        valid_mean = -np.mean(valid_scores, axis=1)
+        valid_std = np.std(valid_scores, axis=1)
+                
+        plt.figure(figsize=(10, 6))
+        plt.plot(param_range, train_mean, label="Training score", color="red", marker="o")
+        plt.fill_between(param_range, train_mean - train_std, train_mean + train_std, alpha=0.2, color="blue")
+
+        plt.plot(param_range, valid_mean, label="Cross-validation score", color="green", marker="o")
+        plt.fill_between(param_range, valid_mean - valid_std, valid_mean + valid_std, alpha=0.2, color="green")
+
+        plt.title("Validation Curve for Random Forest")
+        plt.xlabel("Number of Estimators")
+        plt.ylabel("Negative Mean Squared Error")
+        plt.legend(loc="best")
+        plt.grid()
+        plt.show()
+    
+    # def learning_score(self):
+    #     train_sizes = np.linspace(0.1, 1.0, 10)
+    #     train_sizes, train_scores, valid_scores = learning_curve(
     #         RandomForestRegressor(),
     #         self.X_train, self.y_train,
-    #         param_name="n_estimators",
-    #         param_range=param_range,
-    #         cv=5,  # Cross-validation folds
+    #         train_sizes=train_sizes,
+    #         cv=5,  # Number of cross-validation folds
     #         scoring="neg_mean_squared_error"  # Use an appropriate scoring metric
     #     )
     #     train_mean = -np.mean(train_scores, axis=1)
@@ -476,21 +507,22 @@ class Regression:
     #     valid_std = np.std(valid_scores, axis=1)
         
     #     plt.figure(figsize=(10, 6))
-    #     plt.plot(param_range, train_mean, label="Training score", color="blue", marker="o")
-    #     plt.fill_between(param_range, train_mean - train_std, train_mean + train_std, alpha=0.2, color="blue")
+    #     plt.plot(train_sizes, train_mean, label="Training score", color="blue", marker="o")
+    #     plt.fill_between(train_sizes, train_mean - train_std, train_mean + train_std, alpha=0.2, color="blue")
 
-    #     plt.plot(param_range, valid_mean, label="Cross-validation score", color="green", marker="o")
-    #     plt.fill_between(param_range, valid_mean - valid_std, valid_mean + valid_std, alpha=0.2, color="green")
+    #     plt.plot(train_sizes, valid_mean, label="Validation score", color="green", marker="o")
+    #     plt.fill_between(train_sizes, valid_mean - valid_std, valid_mean + valid_std, alpha=0.2, color="green")
 
-    #     plt.title("Validation Curve for Random Forest")
-    #     plt.xlabel("Number of Estimators")
+    #     plt.title("Learning Curve for Random Forest Regressor")
+    #     plt.xlabel("Training Set Size")
     #     plt.ylabel("Negative Mean Squared Error")
     #     plt.legend(loc="best")
     #     plt.grid()
     #     plt.show()
 
 
-    def sklearn_RFregression(self, use_model=None, params={}):
+
+    def sklearn_RFregression(self, use_model=None, params={'n_jobs':-1}):
         self.test_train()
         # ----- Random Forest Regressor -----
         if use_model == None:
@@ -522,9 +554,51 @@ class Regression:
         self.mdi_importance(sklearn_rf_model)
         # self.sfs_selection(sklearn_rf_model)
         self.rf_evaluation(sklearn_rf_model)
-        self.validation_score()
+        # self.validation_score()
+        # self.learning_curv()
+        self.oob_curv()
         self.rf_model = sklearn_rf_model
         return sklearn_rf_model
+    
+    def learning_curv(self):
+        train_sizes, train_scores, test_scores = learning_curve(
+            self.rf_model, self.X_train, self.y_train)
+        display = LearningCurveDisplay(train_sizes=train_sizes,
+                                       train_scores=train_scores, 
+                                       test_scores=test_scores, 
+                                       score_name="Score")
+        display.plot()
+        plt.show()
+    
+    def oob_curv(self):
+        oob_errors = 1 - self.rf_model.oob_score_
+        # Create lists to store the number of trees and corresponding OOB errors
+        n_estimators_range = range(1, 101)
+        oob_errors = []
+
+        # Iterate through different numbers of trees and calculate OOB errors
+        for n_estimators in n_estimators_range:
+            rf = RandomForestRegressor(n_estimators=n_estimators, oob_score=True, random_state=42)
+            rf.fit(X, y)
+            oob_error = 1 - rf.oob_score_
+            oob_errors.append(oob_error)
+
+        # Create the plot
+        plt.figure(figsize=(10, 6))
+        plt.plot(n_estimators_range, oob_errors, marker='o', linestyle='-', color='b')
+        plt.xlabel('Number of Trees in the Forest')
+        plt.ylabel('OOB Error')
+        plt.title('OOB Error vs. Number of Trees in Random Forest')
+        plt.grid(True)
+        plt.savefig('ICESAT/plot/oob_plot.png')
+        plt.show()
+
+
+        
+
+
+        
+        
 
 
     def ranger_RFregression(self):
@@ -584,15 +658,15 @@ class Regression:
         # plt.show()
         
         # --- Plot Pred v Ground ----
-        plt.scatter(self.y_test, y_pred, c='b', marker='.', label='Ground Truth vs. Predicted')
-        # Add labels and title
-        plt.xlabel('Ground Truth')
-        plt.ylabel('Predicted Values')
-        plt.title('Scatter Plot of Ground Truth vs. Predicted')
-        # # Add a 45-degree reference line (optional)
-        # plt.plot([np.min(cropped_ground_truth), np.max(cropped_ground_truth)], [np.min(cropped_ground_truth), np.max(cropped_ground_truth)], 'r--', label='45-degree line')
-        plt.legend()
-        plt.show()
+        # plt.scatter(self.y_test, y_pred, c='b', marker='.', label='Ground Truth vs. Predicted')
+        # # Add labels and title
+        # plt.xlabel('Ground Truth')
+        # plt.ylabel('Predicted Values')
+        # plt.title('Scatter Plot of Ground Truth vs. Predicted')
+        # # # Add a 45-degree reference line (optional)
+        # # plt.plot([np.min(cropped_ground_truth), np.max(cropped_ground_truth)], [np.min(cropped_ground_truth), np.max(cropped_ground_truth)], 'r--', label='45-degree line')
+        # plt.legend()
+        # plt.show()
 
 
     def save_rfmodel(self, rf_modelname):
