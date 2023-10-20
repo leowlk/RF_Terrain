@@ -17,8 +17,8 @@ import seaborn as sns
 
 def main():
     try:
-        jparams = json.load(open("params_au.json"))
         where = "au"
+        jparams = json.load(open(f"params_{where}.json"))
     except:
         print("ERROR: something is wrong with the params.json file.")
         sys.exit()
@@ -30,7 +30,7 @@ def main():
 
     # Points in 3D pandas dataframe
     icepts = data
-    icepts_LLH = icepts[["lat", "lon", "h_te_interp"]]
+    icepts_LLH = icepts[["lat", "lon", "g_height"]]
 
     res = jparams["interp"]["resolution"]
 
@@ -68,6 +68,7 @@ def main():
             n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
             interpolation.aidw_interp(icepts_NP, res, interp_outtif, n_neighbours)
 
+
     # ----- [2] Gather GEE features ----- #
     def change_projection():
         pass
@@ -76,7 +77,7 @@ def main():
         # xmax, ymax = proj.transform(xmax_ori,ymax_ori)
 
     # ----- [3] Prep features data ----- #
-    grid = Interp(icepts_NP, res=100)
+    grid = Interp(icepts_NP, res)
     grid = grid.make_grid(icepts_NP)
 
     icepts_LL = icepts_LLH[["lat", "lon"]]
@@ -112,48 +113,59 @@ def main():
     icepts_RF = pd.concat([icepts_LLH, icepts_RF], axis=1)
     gridpts_RF = pd.concat([gridpts_LL, gridpts_RF], axis=1)
 
+    # Relative Height of Nearby Points
+    relativ_h_to_ice = random_forest.relativeh_to_pts(icepts_LLH, icepts_LL)
+    relativ_h_to_grid = random_forest.relativeh_to_pts(icepts_LLH, gridpts_LL)
+
+    # Height of Nearby Points
+    height_to_ice = random_forest.height_to_pts(icepts_LLH, icepts_LL)
+    height_to_grid = random_forest.height_to_pts(icepts_LLH, gridpts_LL)
 
     # Buffer Distance to Points
-    distance_to_ice = random_forest.dist_to_pts(icepts_LLH, icepts_LL)
-    distance_to_grid = random_forest.dist_to_pts(icepts_LLH, gridpts_LL)
-    # Height of Nearby Points
-    # height_to_ice = random_forest.height_to_pts(icepts_LLH, icepts_LL)
-    # height_to_grid = random_forest.height_to_pts(icepts_LLH, gridpts_LL)
-    # Inbetween Angle of Nearby Point
-    angle_to_ice = random_forest.angle_to_pts(icepts_LLH, icepts_LL)
-    angle_to_grid = random_forest.angle_to_pts(icepts_LLH, gridpts_LL)
-    # Relative Height of Nearby Points
-    relativeh_to_ice = random_forest.relativeh_to_pts(icepts_LLH, icepts_LL)
-    relativeh_to_grid = random_forest.relativeh_to_pts(icepts_LLH, gridpts_LL)
+    distance_to_ice = random_forest.dist_to_pts(icepts_LLH, icepts_LL, where)
+    distance_to_grid = random_forest.dist_to_pts(icepts_LLH, gridpts_LL, where)
+
     # Slope to Nearby Points
     slope_to_ice = random_forest.slope_to_pts(icepts_LLH, icepts_LL, where)
     slope_to_grid = random_forest.slope_to_pts(icepts_LLH, gridpts_LL, where)
-    
+
+    # Inbetween Angle of Nearby Point
+    # angle_to_ice = random_forest.angle_to_pts(icepts_LLH, icepts_LL)
+    # angle_to_grid = random_forest.angle_to_pts(icepts_LLH, gridpts_LL)
+
+    centroid_to_ice = random_forest.centroid_to_pts(icepts_LLH, icepts_LL, where)
+    centroid_to_grid = random_forest.centroid_to_pts(icepts_LLH, gridpts_LL, where)
+
+        
     # Normalise Interp_h column and concat into gridpts_RF
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
+    
     print("Geometric Features")
     icepts_RF = pd.concat(
         [
             icepts_RF,
-            relativeh_to_ice,
-            # height_to_ice,
+            relativ_h_to_ice,
+            height_to_ice,
             distance_to_ice,
-            angle_to_ice,
-            slope_to_ice
+            # angle_to_ice,
+            slope_to_ice,
+            centroid_to_ice
         ],
         axis=1,
     )
     gridpts_RF = pd.concat(
         [
             gridpts_RF,
-            relativeh_to_grid,
-            # height_to_grid,
+            relativ_h_to_grid,
+            height_to_grid,
             distance_to_grid,
-            angle_to_grid,
-            slope_to_grid
+            # angle_to_grid,
+            slope_to_grid,
+            centroid_to_grid
         ],
         axis=1,
     )
+
     # ----- Correlation Matrix -----
     # correlation = icepts_RF.corr(method='spearman')
     # correlation.dropna(axis=0, how='all', inplace=True)
@@ -205,9 +217,10 @@ def main():
         icepts_RF,
         gridpts_RF,
         mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
-        outname=results_tif + "tasman_samples4.tif",
-        save_rf_model=True,
-        params={"criterion": "squared_error"},
+        outname=results_tif + "_geometricOnly.tif",
+        save_rf_model=False,
+        params={},
+        # params=optimal_params["nz"]
     )
 
     # random_forest.use_rf_model(

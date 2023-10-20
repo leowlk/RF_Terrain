@@ -1,7 +1,7 @@
 ,features,importance
-0,angle_btwn,0.00022
-1,dist_buffer,9e-05
-2,interp,0.99399
-3,interp200,0.00205
-4,relative_h,0.0019500000000000001
-5,slope_h,0.0007000000000000001
+0,centroid_dist,1e-05
+1,distance_to,2e-05
+2,global_water_c,0.0
+3,nearest_height,0.9985599999999999
+4,relative_h,0.00139
+5,slope_h,2e-05

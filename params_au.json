@@ -1,8 +1,8 @@
 {
-    "icesat_csv": "ICESAT/tasmania/tasmania.csv",
+    "icesat_csv": "ICESAT/tasmania/tasmania_g.csv",
     "features-path": "ICESAT/tasmania/rf_features",
     "interp": {
-        "resolution": 100,
+        "resolution": 300,
         "laplace": {
             "outfile": "ICESAT/tasmania/interpolation/interpSamples_laplace.tif"
         },
