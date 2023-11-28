@@ -7,6 +7,7 @@ import joblib
 import math
 import matplotlib.pyplot as plt
 import seaborn as sns
+import startinpy
 
 # Xarray
 import xarray as xr
@@ -37,6 +38,8 @@ from sklearn.model_selection import (
 )
 
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
+from sklearn.feature_selection import RFE
+from sklearn.pipeline import Pipeline
 from mlxtend.plotting import plot_sequential_feature_selection as plot_sfs
 
 from sklearn.feature_selection import SelectFromModel
@@ -147,7 +150,7 @@ class Geometry:
         icepts_T = icepts_LL_T[["x", "y"]]
         iceptsH_T = icepts_LLH_T[["x", "y", "g_height"]]
 
-        knn = NearestNeighbors(n_neighbors=3, algorithm="ball_tree").fit(icepts_T)
+        knn = NearestNeighbors(n_neighbors=2, algorithm="ball_tree").fit(icepts_T)
         if pts == "icepts":
             d, i = knn.kneighbors(icepts_T)
             d = d[:, 1:]
@@ -309,37 +312,76 @@ class Geometry:
         gridpts_T = gridpts_LL_T[["x", "y"]]
         icepts_T = icepts_LL_T[["x", "y"]]
         iceptsH_T = icepts_LLH_T[["x", "y", "g_height"]]
-
+        
         knn = NearestNeighbors(n_neighbors=3, algorithm="ball_tree").fit(icepts_T)
+        
         if pts == "icepts":
             d, i = knn.kneighbors(icepts_T)
             slope_list = []
             for row in i:
                 pt_0 = iceptsH_T.iloc[row[0]].to_numpy()
-                pt_rest = row[2:]
+                pt_rest = row[1:]
                 _tmp = []
+                slope_vec = []
+                                
                 for r in pt_rest:
-                    pt_r = iceptsH_T.iloc[r].to_numpy()
+                    pt_r = iceptsH_T.iloc[r].to_numpy()          
                     slope_vector = pt_r - pt_0
-                    d_x, d_y, d_z = slope_vector
-                    overall_slope = d_z / math.sqrt(d_x**2 + d_y**2 + d_z**2)
-                    _tmp.append(overall_slope)
-                slope_list.append(_tmp)
+                    slope_vec.append(slope_vector)
+                slope_vec = np.array(slope_vec)
+                
+                N = len(slope_vec)
+                sum_of_slopes = 0
+                for i in range(N - 1):
+                    delta_x = slope_vec[i + 1][0] - pt_0[0]
+                    delta_y = slope_vec[i + 1][1] - pt_0[1]
+                    delta_z = slope_vec[i + 1][2] - pt_0[2]
+                    slope_i = np.sqrt((delta_z / delta_x)**2 + (delta_z / delta_y)**2)
+                    sum_of_slopes += slope_i
+                average_slope = sum_of_slopes / (N - 1)
+                slope_list.append(average_slope)
+
+            
+            # slope_list = []
+            # for row in i:
+            #     pt_0 = iceptsH_T.iloc[row[0]].to_numpy()
+            #     pt_rest = row[1:]
+            #     print(pt_rest)
+                                
+            #     _tmp = []
+            #     for r in pt_rest:
+            #         pt_r = iceptsH_T.iloc[r].to_numpy()
+            #         slope_vector = pt_r - pt_0
+            #         d_x, d_y, d_z = slope_vector
+            #         overall_slope = d_z / math.sqrt(d_x**2 + d_y**2 + d_z**2)
+            #         _tmp.append(overall_slope)
+            #     slope_list.append(_tmp)
 
         elif pts == "gridpts":
             d, i = knn.kneighbors(gridpts_T)
             slope_list = []
             for row in i:
                 pt_0 = iceptsH_T.iloc[row[0]].to_numpy()
-                pt_rest = row[2:]
+                pt_rest = row[1:]
                 _tmp = []
+                slope_vec = []
+                                
                 for r in pt_rest:
-                    pt_r = iceptsH_T.iloc[r].to_numpy()
+                    pt_r = iceptsH_T.iloc[r].to_numpy()          
                     slope_vector = pt_r - pt_0
-                    d_x, d_y, d_z = slope_vector
-                    overall_slope = d_z / math.sqrt(d_x**2 + d_y**2 + d_z**2)
-                    _tmp.append(overall_slope)
-                slope_list.append(_tmp)
+                    slope_vec.append(slope_vector)
+                slope_vec = np.array(slope_vec)
+                
+                N = len(slope_vec)
+                sum_of_slopes = 0
+                for i in range(N - 1):
+                    delta_x = slope_vec[i + 1][0] - pt_0[0]
+                    delta_y = slope_vec[i + 1][1] - pt_0[1]
+                    delta_z = slope_vec[i + 1][2] - pt_0[2]
+                    slope_i = np.sqrt((delta_z / delta_x)**2 + (delta_z / delta_y)**2)
+                    sum_of_slopes += slope_i
+                average_slope = sum_of_slopes / (N - 1)
+                slope_list.append(average_slope)
         else:
             print("Invalid points specified.")
             return None
@@ -399,7 +441,7 @@ class Regression:
         Returns:
             _type_: _description_
         """
-        self.x_ml = self.df.drop(columns=["g_height"])
+        self.x_ml = self.df.drop(columns=["g_height", "lat", "lon"])
         self.y_ml = self.df["g_height"]  # Target
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.x_ml, self.y_ml, test_size=0.2, random_state=42
@@ -450,12 +492,12 @@ class Regression:
         I2.to_csv("mdi_importance2.csv")
         
         fig, ax = plt.subplots()
-        I2.plot.bar(ax=ax)
+        I.plot.bar(ax=ax)
         ax.set_title("Feature importances using MDI")
         ax.set_ylabel("Mean decrease in impurity")
         fig.tight_layout()
 
-        print(I2)
+        print(I)
         
     # -------- Grid Search CV --------
     def grid_search(self):
@@ -463,7 +505,7 @@ class Regression:
             "n_estimators": [100, 200, 500],
             "max_depth": [10, 20, 30],
             "min_samples_split": [2, 5, 10],
-            "n_jobfs": [-1],
+            "n_jobfs": [-1]
         }
 
         # make a GridSearchCV object
@@ -540,19 +582,79 @@ class Regression:
     #     plt.legend(loc="best")
     #     plt.grid()
     #     plt.show()
+    def permutation_importances(self, rf, X_train, y_train, metric):
+        baseline = metric(rf, X_train, y_train)
+        imp = []
+        for col in X_train.columns:
+            save = X_train[col].copy()
+            X_train[col] = np.random.permutation(X_train[col])
+            m = metric(rf, X_train, y_train)
+            X_train[col] = save
+            imp.append(baseline - m)
+        return np.array(imp)
 
     def sklearn_RFregression(self, use_model=None, params={}):
         self.test_train()
         # ----- Random Forest Regressor -----
         if use_model == None:
             sklearn_rf_model = RandomForestRegressor(oob_score=True, **params)
+            rfe = RFE(estimator=sklearn_rf_model, n_features_to_select=5)
+            # pipeline = Pipeline(steps=[('s',rfe),('m',sklearn_rf_model)])
 
         # use model (if any) && use params (if any)
         else:
             print("use model is present")
             sklearn_rf_model = joblib.load(use_model)
-        sklearn_rf_model.fit(self.X_train, self.y_train)
+        
+        # print x_train and y_train
 
+        
+        sklearn_rf_model.fit(self.X_train, self.y_train)
+        mdi_importance = sklearn_rf_model.feature_importances_
+
+        # Sort feature importance scores in descending order
+        sorted_indices = np.argsort(mdi_importance)
+        sorted_importance = mdi_importance[sorted_indices]
+        
+        feature_names = self.X_test.columns  # If you have column names for your features
+
+        # Horizontal bar plot to visualize feature importance
+        plt.figure(figsize=(10, 6))
+        plt.barh(range(len(sorted_importance)), sorted_importance)
+        plt.yticks(range(len(sorted_importance)), feature_names[sorted_indices])  # Set y-axis labels
+        plt.xlabel('MDI Importance')
+        plt.ylabel('Features')  # Reversed the labels for horizontal bar chart
+        plt.title('Feature Importance in Random Forest Regression')
+        
+        # Add importance labels to the bars
+        for i, v in enumerate(sorted_importance):
+            plt.text(v, i, f'{v:.4f}', color='black', va='center', ha='left', fontweight='normal')
+
+        plt.tight_layout()
+        plt.show()
+
+        # mdi_importance = sklearn_rf_model.feature_importances_
+        
+        # # Sort feature importance scores in descending order
+        # sorted_indices = np.argsort(mdi_importance)[::-1]
+        # sorted_importance = mdi_importance[sorted_indices]
+        # feature_names = self.X_test.columns  # If you have column names for your features
+
+        # # Bar plot to visualize feature importance
+        # sns.set()
+        # plt.figure(figsize=(10, 6))
+        # plt.barh(range(len(sorted_importance)), sorted_importance)
+        # plt.xticks(range(len(sorted_importance)), feature_names[sorted_indices], rotation=90)
+        # plt.xlabel('Features')
+        # plt.ylabel('MDI Importance')
+        # plt.title('Feature Importance in Random Forest Regression')
+        # plt.tight_layout()
+        # plt.show()
+        
+
+        # imp = self.permutation_importances(sklearn_rf_model, self.X_train, self.y_train, oob_regression_r2_score)
+
+        
         # ----- Print RF Tree -----
         # from sklearn import tree
         # print(len(sklearn_rf_model.estimators_))
@@ -569,6 +671,9 @@ class Regression:
         # plt.show()
 
         # ----- Feature Importances -----
+
+
+
         # self.perm_importance(sklearn_rf_model)
         self.mdi_importance(sklearn_rf_model)
         # self.sfs_selection(sklearn_rf_model)
@@ -579,15 +684,15 @@ class Regression:
         self.rf_model = sklearn_rf_model
         return sklearn_rf_model
     
-    # def learning_curv(self):
-    #     train_sizes, train_scores, test_scores = learning_curve(
-    #         self.rf_model, self.X_train, self.y_train)
-    #     display = LearningCurveDisplay(train_sizes=train_sizes,
-    #                                    train_scores=train_scores, 
-    #                                    test_scores=test_scores, 
-    #                                    score_name="Score")
-    #     display.plot()
-    #     plt.show()
+    # def learning_curv(self, the_model):
+        # train_sizes, train_scores, test_scores = learning_curve(
+        #     the_model, self.X_train, self.y_train)
+        # display = LearningCurveDisplay(train_sizes=train_sizes,
+        #                                train_scores=train_scores, 
+        #                                test_scores=test_scores, 
+        #                                score_name="Score")
+        # display.plot()
+        # plt.show()
     
     def oob_curv(self, rf_model):
         oob_errors = 1 - rf_model.oob_score_
@@ -617,11 +722,12 @@ class Regression:
     def ranger_RFregression(self):
         self.test_train()
         # ----- Ranger Regressor -----
-        ranger_rf_model = RangerForestRegressor(n_jobs=-1)
+        ranger_rf_model = RangerForestRegressor(n_jobs=-1, importance='impurity')
         # Fitting the Random Forest Regression model to the data
         ranger_rf_model.fit(self.X_train, self.y_train)
         self.rf_evaluation(ranger_rf_model)
         self.rf_model = ranger_rf_model
+        
         return ranger_rf_model
 
     def xgboost_RFregression(self):
@@ -737,7 +843,16 @@ class Regression:
 
         rf_pred_target = self.rf_model.predict(pred_h)
         pred_h["pred_h"] = rf_pred_target
-        latlon_h = pred_h[["lat", "lon", "pred_h"]]
+        
+        latlon_id = self.grid_raster[["lat", "lon"]]
+        latlon_pred = pred_h[["pred_h"]]
+        
+        print(latlon_id)
+        print(latlon_pred)
+        
+        latlon_h = pd.concat([latlon_id, latlon_pred], axis=1, join='inner')
+        
+        print(latlon_h)
 
         # export to Gtiff with 'lat' 'lon' and 'predicted h'
         xr_pred_h = xr.Dataset.from_dataframe(latlon_h.set_index(["lat", "lon"]))

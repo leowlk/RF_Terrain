@@ -26,20 +26,19 @@ def sampleFromTIF(sample_from, sample_pts_df, filterna=False):
         return sampled_df
 
 def main():
-    # pts = pd.read_csv("ICESAT/tasmania/tasmania.csv")
-    # G_tasmania = rasterio.open("ICESAT/tasmania/gnd_dem_01.tif")
-    # p = sampleFromTIF("ICESAT/tasmania/gnd_dem_01.tif", pts, filterna=True)
-    # p.to_csv("ICESAT/tasmania/tasmania_g.csv",sep=',')
-    orig = pd.read_csv("ICESAT/tasmania/tasmania.csv")
-    newg = pd.read_csv("ICESAT/tasmania/tasmania_g.csv")
-    origg = orig[['h_te_interp']]
-    newgg = newg[['g_height']]
-    diff = pd.DataFrame(origg.values - newgg.values)
+    pts = pd.read_csv("ICESAT/nzealand/taranaki_i.csv")
+    # G_ = rasterio.open("ICESAT/zlimburg/gnd_eu_dem.tif")
     
-    
+    p = sampleFromTIF("ICESAT/nzealand/gnd_taranaki.tif", pts, filterna=True)
+    p.to_csv("ICESAT/nzealand/taranaki_g.csv",sep=',')
+    # orig = pd.read_csv("ICESAT/tasmania/tasmania_i.csv")
+    # newg = pd.read_csv("ICESAT/tasmania/tasmania_g.csv")
+    # origg = orig[['h_te_interp']]
+    # newgg = newg[['g_height']]
+    # diff = pd.DataFrame(origg.values - newgg.values)
 
-    plt.grid(True)
-    plt.show()
+    # plt.grid(True)
+    # plt.show()
 
 
 if __name__ == "__main__":

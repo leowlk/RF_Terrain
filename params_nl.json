@@ -1,5 +1,5 @@
 {
-    "icesat_csv": "ICESAT/zlimburg/zuid_limburg.csv",
+    "icesat_csv": "ICESAT/zlimburg/zlimburg_g.csv",
     "features-path": "ICESAT/zlimburg/rf_features",
     "interp": {
         "resolution": 100,

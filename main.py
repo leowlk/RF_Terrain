@@ -113,6 +113,7 @@ def main():
     icepts_RF = pd.concat([icepts_LLH, icepts_RF], axis=1)
     gridpts_RF = pd.concat([gridpts_LL, gridpts_RF], axis=1)
 
+    
     # Relative Height of Nearby Points
     relativ_h_to_ice = random_forest.relativeh_to_pts(icepts_LLH, icepts_LL)
     relativ_h_to_grid = random_forest.relativeh_to_pts(icepts_LLH, gridpts_LL)
@@ -135,8 +136,7 @@ def main():
 
     centroid_to_ice = random_forest.centroid_to_pts(icepts_LLH, icepts_LL, where)
     centroid_to_grid = random_forest.centroid_to_pts(icepts_LLH, gridpts_LL, where)
-
-        
+    
     # Normalise Interp_h column and concat into gridpts_RF
     # interp_h = random_forest.normaliseScaling(icepts_LLH, "h_te_interp")
     
@@ -145,11 +145,13 @@ def main():
         [
             icepts_RF,
             relativ_h_to_ice,
-            height_to_ice,
-            distance_to_ice,
             # angle_to_ice,
             slope_to_ice,
-            centroid_to_ice
+            centroid_to_ice,
+            distance_to_ice,
+            height_to_ice
+
+
         ],
         axis=1,
     )
@@ -157,29 +159,31 @@ def main():
         [
             gridpts_RF,
             relativ_h_to_grid,
-            height_to_grid,
-            distance_to_grid,
             # angle_to_grid,
             slope_to_grid,
-            centroid_to_grid
+            centroid_to_grid,
+            distance_to_grid,
+            height_to_ice
+
+
         ],
         axis=1,
     )
 
     # ----- Correlation Matrix -----
-    # correlation = icepts_RF.corr(method='spearman')
-    # correlation.dropna(axis=0, how='all', inplace=True)
-    # correlation.dropna(axis=1, how='all', inplace=True)
-    # # plt.matshow(correlation)
+    correlation = icepts_RF.corr(method='spearman')
+    correlation.dropna(axis=0, how='all', inplace=True)
+    correlation.dropna(axis=1, how='all', inplace=True)
+    # plt.matshow(correlation)
     # plt.figure(figsize=(8, 7))
-    # sns.heatmap(correlation, annot=False, cmap='coolwarm', vmin=-1, vmax=1,
-    #             xticklabels=correlation.columns, yticklabels=correlation.columns)
-    # # plt.savefig("correlation_matrix.png")
-    # plt.title("Correlation Matrix")
-    # plt.tight_layout()
-    # plt.show()
+    sns.heatmap(correlation, annot=False, cmap='coolwarm', vmin=-1, vmax=1,
+                xticklabels=correlation.columns, yticklabels=correlation.columns)
+    # plt.savefig("correlation_matrix.png")
+    plt.title("Correlation Matrix")
+    plt.tight_layout()
+    plt.show()
 
-    # breakpoint()
+    breakpoint()
     # ------------------------------
 
     # ----- [4] Random Forest Mahcine Learning ----- #
