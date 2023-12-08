@@ -1,3 +1,13 @@
 ,features,importance
-0,global_water_c,2e-05
-1,slope_h,0.99998
+0,distance_to,1e-05
+1,esri_lulc2020_c,0.0
+2,geomorhpon_c,0.0
+3,gl_surface_water_c,0.0
+4,global_crops_c,0.0
+5,global_water_c,0.0
+6,landsat_tree_caopy_cover,1e-05
+7,ndvi2,1e-05
+8,nearest_height,0.9801700000000001
+9,relative_h,0.00053
+10,slope_h,0.01923
+11,surface_temp,1e-05

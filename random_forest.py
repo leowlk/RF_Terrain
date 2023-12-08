@@ -313,7 +313,7 @@ class Geometry:
         icepts_T = icepts_LL_T[["x", "y"]]
         iceptsH_T = icepts_LLH_T[["x", "y", "g_height"]]
         
-        knn = NearestNeighbors(n_neighbors=3, algorithm="ball_tree").fit(icepts_T)
+        knn = NearestNeighbors(n_neighbors=11, algorithm="ball_tree").fit(icepts_T)
         
         if pts == "icepts":
             d, i = knn.kneighbors(icepts_T)
@@ -341,7 +341,6 @@ class Geometry:
                 average_slope = sum_of_slopes / (N - 1)
                 slope_list.append(average_slope)
 
-            
             # slope_list = []
             # for row in i:
             #     pt_0 = iceptsH_T.iloc[row[0]].to_numpy()
@@ -441,8 +440,10 @@ class Regression:
         Returns:
             _type_: _description_
         """
-        self.x_ml = self.df.drop(columns=["g_height", "lat", "lon"])
+        self.x_ml = self.df.drop(columns=["g_height" ])
+                                        #   "lat", "lon"])
         self.y_ml = self.df["g_height"]  # Target
+        
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             self.x_ml, self.y_ml, test_size=0.2, random_state=42
         )
@@ -607,8 +608,6 @@ class Regression:
             sklearn_rf_model = joblib.load(use_model)
         
         # print x_train and y_train
-
-        
         sklearn_rf_model.fit(self.X_train, self.y_train)
         mdi_importance = sklearn_rf_model.feature_importances_
 
@@ -629,7 +628,6 @@ class Regression:
         # Add importance labels to the bars
         for i, v in enumerate(sorted_importance):
             plt.text(v, i, f'{v:.4f}', color='black', va='center', ha='left', fontweight='normal')
-
         plt.tight_layout()
         plt.show()
 
@@ -672,8 +670,6 @@ class Regression:
 
         # ----- Feature Importances -----
 
-
-
         # self.perm_importance(sklearn_rf_model)
         self.mdi_importance(sklearn_rf_model)
         # self.sfs_selection(sklearn_rf_model)
@@ -684,15 +680,15 @@ class Regression:
         self.rf_model = sklearn_rf_model
         return sklearn_rf_model
     
-    # def learning_curv(self, the_model):
-        # train_sizes, train_scores, test_scores = learning_curve(
-        #     the_model, self.X_train, self.y_train)
-        # display = LearningCurveDisplay(train_sizes=train_sizes,
-        #                                train_scores=train_scores, 
-        #                                test_scores=test_scores, 
-        #                                score_name="Score")
-        # display.plot()
-        # plt.show()
+    def learning_curv(self, the_model):
+        train_sizes, train_scores, test_scores = learning_curve(
+            the_model, self.X_train, self.y_train)
+        display = LearningCurveDisplay(train_sizes=train_sizes,
+                                       train_scores=train_scores, 
+                                       test_scores=test_scores, 
+                                       score_name="Score")
+        display.plot()
+        plt.show()
     
     def oob_curv(self, rf_model):
         oob_errors = 1 - rf_model.oob_score_
@@ -840,20 +836,18 @@ class Regression:
     def output_tif(self, outname):
         pred_h = pd.DataFrame(self.grid_raster, columns=self.X_train.columns)
         pred_h.dropna(axis=1, inplace=True)
-
+                
         rf_pred_target = self.rf_model.predict(pred_h)
         pred_h["pred_h"] = rf_pred_target
-        
-        latlon_id = self.grid_raster[["lat", "lon"]]
-        latlon_pred = pred_h[["pred_h"]]
-        
-        print(latlon_id)
-        print(latlon_pred)
-        
-        latlon_h = pd.concat([latlon_id, latlon_pred], axis=1, join='inner')
-        
-        print(latlon_h)
 
+        latlon_h = pred_h[["lat", "lon", "pred_h"]]
+    
+        # --- Lat Lon ---
+        # latlon_id = self.grid_raster[["lat", "lon"]]
+        # latlon_pred = pred_h[["pred_h"]]
+        # latlon_h = pd.concat([latlon_id, latlon_pred], axis=1, join='inner')
+        # --------------
+        
         # export to Gtiff with 'lat' 'lon' and 'predicted h'
         xr_pred_h = xr.Dataset.from_dataframe(latlon_h.set_index(["lat", "lon"]))
         xr_pred_h.rio.set_crs("EPSG:4326")

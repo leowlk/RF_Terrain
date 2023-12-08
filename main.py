@@ -67,6 +67,8 @@ def main():
         if interp_method == "aidw":
             n_neighbours = jparams["interp"][interp_method]["n_neighbours"]
             interpolation.aidw_interp(icepts_NP, res, interp_outtif, n_neighbours)
+   
+ 
 
 
     # ----- [2] Gather GEE features ----- #
@@ -145,13 +147,11 @@ def main():
         [
             icepts_RF,
             relativ_h_to_ice,
-            # angle_to_ice,
+            # # angle_to_ice,
             slope_to_ice,
-            centroid_to_ice,
+            # # centroid_to_ice,
             distance_to_ice,
             height_to_ice
-
-
         ],
         axis=1,
     )
@@ -159,31 +159,28 @@ def main():
         [
             gridpts_RF,
             relativ_h_to_grid,
-            # angle_to_grid,
+            # # angle_to_grid,
             slope_to_grid,
-            centroid_to_grid,
+            # # centroid_to_grid,
             distance_to_grid,
-            height_to_ice
-
-
+            height_to_grid
         ],
         axis=1,
     )
 
     # ----- Correlation Matrix -----
-    correlation = icepts_RF.corr(method='spearman')
-    correlation.dropna(axis=0, how='all', inplace=True)
-    correlation.dropna(axis=1, how='all', inplace=True)
-    # plt.matshow(correlation)
-    # plt.figure(figsize=(8, 7))
-    sns.heatmap(correlation, annot=False, cmap='coolwarm', vmin=-1, vmax=1,
-                xticklabels=correlation.columns, yticklabels=correlation.columns)
-    # plt.savefig("correlation_matrix.png")
-    plt.title("Correlation Matrix")
-    plt.tight_layout()
-    plt.show()
+    # correlation = icepts_RF.corr(method='spearman')
+    # correlation.dropna(axis=0, how='all', inplace=True)
+    # correlation.dropna(axis=1, how='all', inplace=True)
+    # # plt.matshow(correlation)
+    # # plt.figure(figsize=(8, 7))
+    # sns.heatmap(correlation, annot=False, cmap='coolwarm', vmin=-1, vmax=1,
+    #             xticklabels=correlation.columns, yticklabels=correlation.columns)
+    # # plt.savefig("correlation_matrix.png")
+    # plt.title("Correlation Matrix")
+    # plt.tight_layout()
+    # plt.show()
 
-    breakpoint()
     # ------------------------------
 
     # ----- [4] Random Forest Mahcine Learning ----- #
@@ -217,22 +214,22 @@ def main():
         },
     }
 
-    random_forest.regression(
-        icepts_RF,
-        gridpts_RF,
-        mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
-        outname=results_tif + "_geometricOnly.tif",
-        save_rf_model=False,
-        params={},
-        # params=optimal_params["nz"]
-    )
-
-    # random_forest.use_rf_model(
+    # random_forest.regression(
     #     icepts_RF,
     #     gridpts_RF,
-    #     use_model='ICESAT/combined_rf.joblib',
-    #     outname=results_tif + "_combinedRF.tif",
+    #     mode="sklearn",  # mode: "ranger", "sklearn", "xgboost"
+    #     outname=results_tif + "_geometricOnly.tif",
+    #     save_rf_model=True,
+    #     params={},
+    #     # params=optimal_params["nz"]
     # )
+
+    random_forest.use_rf_model(
+        icepts_RF,
+        gridpts_RF,
+        use_model='ICESAT/combined_rf.joblib',
+        outname=results_tif + "_combinedRF.tif",
+    )
 
 
 # ----- [3] Prep features data ----- #

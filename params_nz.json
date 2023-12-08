@@ -1,5 +1,5 @@
 {
-    "icesat_csv": "ICESAT/nzealand/taranaki.csv",
+    "icesat_csv": "ICESAT/nzealand/taranaki_g.csv",
     "features-path": "ICESAT/nzealand/rf_features",
     "interp": {
         "resolution": 100,
